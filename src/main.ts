@@ -9,13 +9,10 @@ import { TransformInterceptor } from "./common/interceptors/transform.intercepto
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 
-	// Prefijo global — todos los endpoints quedan en /api/v1/...
 	app.setGlobalPrefix("api/v1");
 
-	// Seguridad HTTP headers
 	app.use(helmet());
 
-	// CORS — kotlin web en desarrollo, ajustar para producción
 	app.enableCors({
 		origin: env.CORS_ORIGIN ?? true,
 		credentials: true,
@@ -27,7 +24,6 @@ async function bootstrap() {
 
 	app.useGlobalInterceptors(new TransformInterceptor());
 
-	// Swagger / OpenAPI
 	const config = new DocumentBuilder()
 		.setTitle("SmartBite API")
 		.setDescription("Backend del sistema de gestión inteligente para restaurantes")

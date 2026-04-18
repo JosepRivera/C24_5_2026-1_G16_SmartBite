@@ -732,6 +732,36 @@ GET /api/v1/sales/:id
 Authorization: Bearer <token>
 ```
 
+#### Respuesta exitosa · `200 OK`
+
+```json
+{
+  "data": {
+    "id": "fe0f7524-f4eb-44f9-af65-e2ee405c6a39",
+    "status": "OPEN",
+    "total": 4000,
+    "table_number": null,
+    "customer_name": null,
+    "created_at": "2026-04-17T00:11:13.124Z",
+    "user": {
+      "id": "e510d36a-10ea-45b9-9415-0e9a3d201643",
+      "name": "Dueño SmartBite",
+      "username": "owner"
+    },
+    "items": [
+      {
+        "id": "89355422-75b5-4e96-b7d5-a9de358f3d2a",
+        "product_id": "e9da7c23-05ff-4176-a8f3-883908636183",
+        "product_name": "Papas Fritas",
+        "quantity": 5,
+        "unit_price": 800,
+        "subtotal": 4000
+      }
+    ]
+  }
+}
+```
+
 #### Errores
 
 | Status | Causa | Mensaje |
@@ -916,6 +946,21 @@ Authorization: Bearer <token>
 ```
 GET /api/v1/expenses/:id
 Authorization: Bearer <token>
+```
+
+#### Respuesta exitosa · `200 OK`
+
+```json
+{
+  "data": {
+    "id": "ff4185ff-31ad-43e7-a0e7-988bf1ba8edd",
+    "description": "Compra de papas",
+    "amount": 1200,
+    "category": "Insumos",
+    "created_at": "2026-04-16T22:15:18.934Z",
+    "user_id": "e510d36a-10ea-45b9-9415-0e9a3d201643"
+  }
+}
 ```
 
 #### Errores

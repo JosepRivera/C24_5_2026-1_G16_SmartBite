@@ -57,11 +57,23 @@
 
 ---
 
+## Reportes y cierres · `docs/api/03-reports.md`
+
+| Método | Endpoint                 | Descripción                        | Roles |
+| ------ | ------------------------ | ---------------------------------- | ----- |
+| GET    | /dashboard               | Resumen del día en tiempo real     | OWNER |
+| GET    | /reports/periods         | Ventas agrupadas por período       | OWNER |
+| GET    | /reports/profitability   | Rentabilidad por producto          | OWNER |
+| GET    | /cash-closes             | Listar cierres de caja (paginado)  | OWNER |
+| POST   | /cash-closes             | Generar cierre del día             | OWNER |
+| GET    | /cash-closes/:id         | Obtener cierre por ID              | OWNER |
+
+---
+
 ## No implementado
 
 Los siguientes módulos están documentados como referencia pero aún no tienen endpoints:
 
-- **Reportes** (`03-reports.md`): dashboard, reportes por período, rentabilidad, cierres de caja
 - **Inteligencia artificial** (`04-ai.md`): asistente conversacional, MRP, planes de producción
 - **Voz** (`05-voice.md`): transcripción de audio
 - **Pagos** (`06-payments.md`): notificaciones, dispositivos
