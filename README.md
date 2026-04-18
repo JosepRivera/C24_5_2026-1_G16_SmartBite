@@ -42,16 +42,16 @@ La autenticación es gestionada por **Supabase Auth**: todos los usuarios (dueñ
 | OPS-5  | Gastos y compras | ✅ |
 | OPS-6  | Historial y corrección de ventas | ✅ |
 | OPS-7  | Alertas de stock bajo | ✅ |
-| REP-1  | Dashboard en tiempo real | ⏳ |
-| REP-2  | Reportes por período | ⏳ |
-| REP-3  | Rentabilidad por producto | ⏳ |
-| REP-4  | Cierre de caja diario inmutable | ⏳ |
-| IA-1   | Asistente conversacional (Text-to-SQL) | ⏳ |
-| IA-2   | Predicción de demanda (Holt-Winters) | ⏳ |
-| IA-3   | Recomendador de compras (MRP) | ⏳ |
-| IA-4   | Plan de producción diario | ⏳ |
-| VOZ-1  | Registro por voz (Voice-to-Form) | ⏳ |
-| PAG-1  | Listener Yape / Plin / Ágora | ⏳ |
+| REP-1  | Dashboard en tiempo real | ✅ |
+| REP-2  | Reportes por período | ✅ |
+| REP-3  | Rentabilidad por producto | ✅ |
+| REP-4  | Cierre de caja diario inmutable | ✅ |
+| IA-1   | Asistente conversacional (Text-to-SQL) | ✅ |
+| IA-2   | Predicción de demanda (Holt-Winters) | ✅ |
+| IA-3   | Recomendador de compras (MRP) | ✅ |
+| IA-4   | Plan de producción diario | ✅ |
+| VOZ-1  | Registro por voz (Voice-to-Form) | ✅ |
+| PAG-1  | Listener Yape / Plin / Ágora | ✅ |
 
 ✅ Completado · 🔧 En desarrollo · ⏳ Pendiente
 
@@ -133,4 +133,7 @@ docker compose up   # Inicia la API contra Supabase cloud
 | [`docs/api/01-auth.md`](./docs/api/01-auth.md) | Endpoints de autenticación |
 | [`docs/api/02-ops.md`](./docs/api/02-ops.md) | Productos, insumos, recetas, ventas, gastos, alertas |
 | [`docs/api/02-users.md`](./docs/api/02-users.md) | Gestión de empleados y roles |
-| [`docs/api/06-payments.md`](./docs/api/06-payments.md) | Listener de pagos digitales |
+| [`docs/api/03-reports.md`](./docs/api/03-reports.md) | Dashboard, reportes y cierre de caja |
+| [`docs/api/04-ai.md`](./docs/api/04-ai.md) | IA: Text-to-SQL, MRP y plan de producción |
+| [`docs/api/05-voice.md`](./docs/api/05-voice.md) | Registro por voz (Whisper + Claude) |
+| [`docs/api/06-payments.md`](./docs/api/06-payments.md) | Listener de pagos digitales y dispositivos |
