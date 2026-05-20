@@ -64,14 +64,24 @@ export class UsersService {
 		}
 
 		// Crear perfil en nuestra BD con el mismo UUID que Supabase asignó
-		return this.prisma.user.create({
-			data: {
-				id: data.user.id,
-				name: dto.name,
-				username: dto.username,
-				role: dto.role,
-			},
-		});
+		try {
+			return await this.prisma.user.create({
+				data: {
+					id: data.user.id,
+					name: dto.name,
+					username: dto.username,
+					role: dto.role,
+				},
+			});
+		} catch (prismaError) {
+			// Compensating transaction: clean up Supabase auth user if Prisma fails
+			await this.supabase.admin.auth.admin
+				.deleteUser(data.user.id)
+				.catch(() => {}); // best-effort cleanup
+			throw new InternalServerErrorException(
+				`Error creando perfil de usuario: ${prismaError instanceof Error ? prismaError.message : "unknown error"}`,
+			);
+		}
 	}
 
 	async update(id: string, dto: UpdateUser, requestingUser: RequestingUser) {

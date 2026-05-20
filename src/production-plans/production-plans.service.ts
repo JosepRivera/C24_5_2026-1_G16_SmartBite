@@ -3,6 +3,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { DemandScheduler } from "@/demand/demand.scheduler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
+import { toLimaDayRange, getLimaDate } from "@/common/utils/timezone";
 
 @Injectable()
 export class ProductionPlansService {
@@ -12,11 +13,7 @@ export class ProductionPlansService {
 	) {}
 
 	async getToday() {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
+		const { start: today, end: tomorrow } = toLimaDayRange();
 
 		const plans = await this.prisma.dailyProductionPlan.findMany({
 			where: { date: { gte: today, lt: tomorrow } },
@@ -31,7 +28,7 @@ export class ProductionPlansService {
 		}
 
 		return {
-			date: today.toISOString().slice(0, 10),
+			date: getLimaDate(today),
 			items: plans.map((p) => ({
 				id: p.id,
 				product_id: p.productId,

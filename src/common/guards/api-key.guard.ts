@@ -3,6 +3,7 @@ import {
 	type CanActivate,
 	type ExecutionContext,
 	Injectable,
+	Logger,
 	UnauthorizedException,
 } from "@nestjs/common";
 // biome-ignore lint/style/useImportType: required for NestJS DI
@@ -10,6 +11,8 @@ import { PrismaService } from "@/prisma/prisma.service";
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
+	private readonly logger = new Logger(ApiKeyGuard.name);
+
 	constructor(private readonly prisma: PrismaService) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,7 +35,7 @@ export class ApiKeyGuard implements CanActivate {
 
 		this.prisma.deviceToken
 			.update({ where: { id: device.id }, data: { lastUsedAt: new Date() } })
-			.catch(() => {});
+			.catch((err) => this.logger.warn("Failed to update lastUsedAt", err));
 
 		return true;
 	}

@@ -1,6 +1,7 @@
 import {
 	Injectable,
 	InternalServerErrorException,
+	Logger,
 	NotFoundException,
 	UnauthorizedException,
 } from "@nestjs/common";
@@ -17,6 +18,8 @@ import type { UpdateOwnerEmailDto } from "./dto/update-owner-email.dto";
 
 @Injectable()
 export class AuthService {
+	private readonly logger = new Logger(AuthService.name);
+
 	constructor(
 		private readonly supabase: SupabaseService,
 		private readonly prisma: PrismaService,
@@ -36,7 +39,7 @@ export class AuthService {
 		});
 
 		if (error || !data.session) {
-			console.error("[auth:login] Supabase error:", error);
+			this.logger.error("Supabase login error", error);
 			throw new UnauthorizedException("Credenciales inválidas");
 		}
 

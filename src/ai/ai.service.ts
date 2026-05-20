@@ -7,7 +7,9 @@ import { TEXT_TO_SQL_SYSTEM_PROMPT } from "./prompts/text-to-sql.prompt";
 
 const _ALLOWED_MODELS = ["claude-haiku-4-5-20251001"];
 const SQL_DANGEROUS_PATTERN =
-	/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE)\b/i;
+	/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
+const SQL_SELECT_PATTERN = /^\s*SELECT\b/i;
+const SQL_UNION_SUBQUERY_PATTERN = /\bUNION\b[\s\S]*\bSELECT\b/i;
 
 @Injectable()
 export class AiService {
@@ -53,12 +55,16 @@ export class AiService {
 		}
 
 		const upperSql = sql.toUpperCase().trim();
-		if (!upperSql.startsWith("SELECT")) {
+		if (!SQL_SELECT_PATTERN.test(upperSql)) {
 			throw new BadRequestException("Solo se permiten consultas SELECT");
 		}
 
 		if (SQL_DANGEROUS_PATTERN.test(sql)) {
 			throw new BadRequestException("Consulta no permitida");
+		}
+
+		if (SQL_UNION_SUBQUERY_PATTERN.test(sql)) {
+			throw new BadRequestException("UNION con subqueries no permitido");
 		}
 
 		if (sql.includes(";")) {
