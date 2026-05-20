@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import type { ExpenseWhereInput } from "@/generated/prisma/models/Expense";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
@@ -21,20 +21,13 @@ export class ExpensesService {
 		return formatExpense(expense);
 	}
 
-	async findAll(date?: string, category?: string) {
+	async findAll(date?: Date, category?: string) {
 		const where: ExpenseWhereInput = {};
 
 		if (date) {
-			if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-				throw new BadRequestException("Fecha inválida. Formato esperado: YYYY-MM-DD");
-			}
-			const start = new Date(date);
-			if (Number.isNaN(start.getTime())) {
-				throw new BadRequestException("Fecha inválida. Formato esperado: YYYY-MM-DD");
-			}
-			const end = new Date(start);
-			end.setDate(end.getDate() + 1);
-			where.createdAt = { gte: start, lt: end };
+			const end = new Date(date);
+			end.setUTCDate(end.getUTCDate() + 1);
+			where.createdAt = { gte: date, lt: end };
 		}
 
 		if (category) {

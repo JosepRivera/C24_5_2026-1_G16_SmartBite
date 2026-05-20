@@ -89,7 +89,7 @@ export class SalesService {
 		return formatSale(sale);
 	}
 
-	async findAll(role: string, status?: string, date?: string, userId?: string) {
+	async findAll(role: string, status?: string, date?: Date, userId?: string) {
 		const where: SaleWhereInput = {};
 		const isOwner = role === "OWNER";
 
@@ -111,16 +111,9 @@ export class SalesService {
 			}
 
 			if (date) {
-				if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-					throw new BadRequestException("Fecha inválida. Formato esperado: YYYY-MM-DD");
-				}
-				const start = new Date(date);
-				if (Number.isNaN(start.getTime())) {
-					throw new BadRequestException("Fecha inválida. Formato esperado: YYYY-MM-DD");
-				}
-				const end = new Date(start);
-				end.setDate(end.getDate() + 1);
-				where.createdAt = { gte: start, lt: end };
+				const end = new Date(date);
+				end.setUTCDate(end.getUTCDate() + 1);
+				where.createdAt = { gte: date, lt: end };
 			}
 
 			if (userId) {
@@ -183,11 +176,25 @@ export class SalesService {
 				}
 			}
 
-			for (const [ingredientId, delta] of stockDeltas) {
-				await tx.ingredient.update({
-					where: { id: ingredientId },
-					data: { stock: { decrement: delta } },
-				});
+			if (stockDeltas.size > 0) {
+				// Batch stock decrement: single SQL instead of N individual updates
+				const ids: string[] = [];
+				const cases: string[] = [];
+				let paramIndex = 1;
+
+				for (const [ingredientId, delta] of stockDeltas) {
+					ids.push(ingredientId);
+					cases.push(`WHEN $${paramIndex} THEN ${delta}`);
+					paramIndex++;
+				}
+
+				const sql = `
+					UPDATE ingredients
+					SET stock = stock - CASE id ${cases.join(" ")} END
+					WHERE id IN (${ids.map((_, i) => `$${i + 1}`).join(", ")})
+				`;
+
+				await tx.$queryRawUnsafe(sql, ...ids);
 			}
 		});
 

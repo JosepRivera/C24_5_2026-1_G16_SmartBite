@@ -22,9 +22,16 @@ export class IngredientsService {
 		};
 	}
 
-	async findAll(lowStock: boolean): Promise<IngredientWithLowStock[]> {
+	async findAll(
+		lowStock: boolean,
+		params?: { skip?: number; take?: number },
+	): Promise<IngredientWithLowStock[]> {
+		const skip = params?.skip ?? 0;
+		const take = Math.min(params?.take ?? 50, 100);
 		const ingredients = await this.prisma.ingredient.findMany({
 			orderBy: { name: "asc" },
+			skip,
+			take,
 		});
 
 		const result = ingredients.map((i) => this.withLowStock(i));

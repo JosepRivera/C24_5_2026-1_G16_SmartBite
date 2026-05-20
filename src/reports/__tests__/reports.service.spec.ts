@@ -1,4 +1,3 @@
-import { BadRequestException } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReportsService } from "../reports.service";
 
@@ -22,25 +21,22 @@ describe("ReportsService", () => {
 	});
 
 	describe("getByPeriod()", () => {
-		it("agrupa ventas por día correctamente", async () => {
+		it("agrupa ventas por día correctamente (Lima timezone)", async () => {
 			mockPrisma.sale.findMany.mockResolvedValue([
 				{ total: "100.00", status: "PAID_CASH", createdAt: new Date("2025-03-01T10:00:00Z") },
 				{ total: "50.00", status: "PAID_YAPE", createdAt: new Date("2025-03-01T14:00:00Z") },
 				{ total: "200.00", status: "PAID_CASH", createdAt: new Date("2025-03-02T09:00:00Z") },
 			]);
 
-			const result = await service.getByPeriod("2025-03-01", "2025-03-02", "day");
+			// DateParamPipe returns Lima midnight as UTC: 2025-03-01T05:00:00Z
+			const from = new Date("2025-03-01T05:00:00.000Z");
+			const to = new Date("2025-03-02T05:00:00.000Z");
+			const result = await service.getByPeriod(from, to, "day");
 
 			expect(result).toHaveLength(2);
 			const day1 = result.find((r) => r.period === "2025-03-01");
 			expect(day1?.total_income).toBe(150);
 			expect(day1?.order_count).toBe(2);
-		});
-
-		it("formato de fecha inválido → BadRequestException", async () => {
-			await expect(service.getByPeriod("01-03-2025", "2025-03-31")).rejects.toThrow(
-				BadRequestException,
-			);
 		});
 	});
 

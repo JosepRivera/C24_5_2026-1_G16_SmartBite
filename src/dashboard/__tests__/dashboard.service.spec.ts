@@ -43,7 +43,8 @@ describe("DashboardService", () => {
 				]);
 			mockPrisma.expense.aggregate.mockResolvedValue({ _sum: { amount: "150.00" } });
 
-			const result = await service.getDailySummary();
+			const today = new Date("2026-05-19T05:00:00.000Z"); // Lima midnight for May 19
+			const result = await service.getDailySummary(today);
 
 			expect(result.cash_income).toBe(500);
 			expect(result.digital_income).toBe(300);
@@ -68,7 +69,8 @@ describe("DashboardService", () => {
 				.mockResolvedValueOnce([]);
 			mockPrisma.expense.aggregate.mockResolvedValue({ _sum: { amount: null } });
 
-			const result = await service.getDailySummary();
+			const today = new Date("2026-05-19T05:00:00.000Z"); // Lima midnight for May 19
+			const result = await service.getDailySummary(today);
 
 			expect(result.total_income).toBe(0);
 			expect(result.estimated_profit).toBe(0);

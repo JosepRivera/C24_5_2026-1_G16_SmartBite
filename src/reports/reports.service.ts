@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { getLimaDate } from "@/common/utils/timezone";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
 
@@ -18,23 +19,14 @@ interface ProfitabilityRow {
 export class ReportsService {
 	constructor(private readonly prisma: PrismaService) {}
 
-	async getByPeriod(from: string, to: string, groupBy: GroupBy = "day", userId?: string) {
-		if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
-			throw new BadRequestException("Fechas inválidas. Formato esperado: YYYY-MM-DD");
-		}
-
-		const fromDate = new Date(from);
+	async getByPeriod(from: Date, to: Date, groupBy: GroupBy = "day", userId?: string) {
 		const toDate = new Date(to);
-		toDate.setDate(toDate.getDate() + 1);
-
-		if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
-			throw new BadRequestException("Fechas inválidas.");
-		}
+		toDate.setUTCDate(toDate.getUTCDate() + 1);
 
 		const sales = await this.prisma.sale.findMany({
 			where: {
 				status: { notIn: ["OPEN", "CANCELLED"] },
-				createdAt: { gte: fromDate, lt: toDate },
+				createdAt: { gte: from, lt: toDate },
 				...(userId ? { userId } : {}),
 			},
 			select: {
@@ -81,14 +73,15 @@ export class ReportsService {
 }
 
 function getPeriodKey(date: Date, groupBy: GroupBy): string {
-	const d = new Date(date);
 	if (groupBy === "day") {
-		return d.toISOString().slice(0, 10);
+		return getLimaDate(date);
 	}
 	if (groupBy === "month") {
-		return d.toISOString().slice(0, 7);
+		return getLimaDate(date).slice(0, 7);
 	}
-	// week: ISO week start (Monday)
+	// week: ISO week start (Monday) in Lima timezone
+	const limaDateStr = getLimaDate(date);
+	const d = new Date(`${limaDateStr}T12:00:00`); // noon to avoid DST edge cases
 	const day = d.getDay();
 	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
 	const monday = new Date(d.setDate(diff));

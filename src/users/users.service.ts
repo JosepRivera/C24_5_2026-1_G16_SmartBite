@@ -22,8 +22,10 @@ export class UsersService {
 		private readonly supabase: SupabaseService,
 	) {}
 
-	async findAll() {
-		return this.prisma.user.findMany();
+	async findAll(params?: { skip?: number; take?: number }) {
+		const skip = params?.skip ?? 0;
+		const take = Math.min(params?.take ?? 50, 100);
+		return this.prisma.user.findMany({ skip, take });
 	}
 
 	async findOne(id: string, requestingUser: RequestingUser) {
@@ -75,9 +77,7 @@ export class UsersService {
 			});
 		} catch (prismaError) {
 			// Compensating transaction: clean up Supabase auth user if Prisma fails
-			await this.supabase.admin.auth.admin
-				.deleteUser(data.user.id)
-				.catch(() => {}); // best-effort cleanup
+			await this.supabase.admin.auth.admin.deleteUser(data.user.id).catch(() => {}); // best-effort cleanup
 			throw new InternalServerErrorException(
 				`Error creando perfil de usuario: ${prismaError instanceof Error ? prismaError.message : "unknown error"}`,
 			);

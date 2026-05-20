@@ -15,6 +15,7 @@ import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
+import { DateParamPipe } from "@/common/pipes/date-param.pipe";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { CreateExpenseDto } from "./dto/create-expense.dto";
@@ -47,7 +48,7 @@ export class ExpensesController {
 	@ApiResponse({ status: 200, description: "Lista de gastos." })
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso." })
-	findAll(@Query("date") date?: string, @Query("category") category?: string) {
+	findAll(@Query("date", new DateParamPipe()) date?: Date, @Query("category") category?: string) {
 		return this.expensesService.findAll(date, category);
 	}
 

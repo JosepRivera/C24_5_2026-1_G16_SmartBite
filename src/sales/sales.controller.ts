@@ -14,6 +14,7 @@ import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
+import { DateParamPipe } from "@/common/pipes/date-param.pipe";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { CorrectSaleDto } from "./dto/correct-sale.dto";
@@ -70,7 +71,7 @@ export class SalesController {
 	findAll(
 		@CurrentUser() user: { sub: string; role: string },
 		@Query("status") status?: string,
-		@Query("date") date?: string,
+		@Query("date", new DateParamPipe()) date?: Date,
 		@Query("user_id") userId?: string,
 	) {
 		return this.salesService.findAll(user.role, status, date, userId);

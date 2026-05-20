@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
-import { toLimaDayRange } from "@/common/utils/timezone";
 
 interface DailySummaryRow {
 	cash_income: unknown;
@@ -23,8 +22,9 @@ interface TopProductRow {
 export class DashboardService {
 	constructor(private readonly prisma: PrismaService) {}
 
-	async getDailySummary(dateParam?: string) {
-		const { start: today, end: tomorrow } = toLimaDayRange(dateParam);
+	async getDailySummary(today: Date) {
+		const tomorrow = new Date(today);
+		tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
 		const [summary] = await this.prisma.$queryRaw<DailySummaryRow[]>`
       SELECT

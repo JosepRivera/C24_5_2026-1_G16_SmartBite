@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@ne
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
+import { DateParamPipe } from "@/common/pipes/date-param.pipe";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ReportsService } from "./reports.service";
@@ -26,8 +27,8 @@ export class ReportsController {
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso." })
 	getByPeriod(
-		@Query("from") from: string,
-		@Query("to") to: string,
+		@Query("from", new DateParamPipe()) from: Date,
+		@Query("to", new DateParamPipe()) to: Date,
 		@Query("groupBy") groupBy?: "day" | "week" | "month",
 		@Query("user_id") userId?: string,
 	) {
