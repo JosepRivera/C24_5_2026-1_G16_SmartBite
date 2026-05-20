@@ -3,37 +3,11 @@ import { HttpException, HttpStatus, Injectable, NotFoundException } from "@nestj
 import { PrismaService } from "@/prisma/prisma.service";
 import type { CreatePaymentNotification } from "./dto/create-payment-notification.dto";
 
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 20;
-
 @Injectable()
 export class PaymentsService {
 	constructor(private readonly prisma: PrismaService) {}
 
-	private readonly rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-	private checkRateLimit(deviceId: string): void {
-		const now = Date.now();
-		const entry = this.rateLimitMap.get(deviceId);
-
-		if (!entry || now >= entry.resetAt) {
-			this.rateLimitMap.set(deviceId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-			return;
-		}
-
-		if (entry.count >= RATE_LIMIT_MAX) {
-			throw new HttpException(
-				"Rate limit excedido: 20 req/min por dispositivo",
-				HttpStatus.TOO_MANY_REQUESTS,
-			);
-		}
-
-		entry.count++;
-	}
-
-	async createNotification(deviceId: string, dto: CreatePaymentNotification) {
-		this.checkRateLimit(deviceId);
-
+	async createNotification(_deviceId: string, dto: CreatePaymentNotification) {
 		const existing = await this.prisma.paymentNotification.findUnique({
 			where: { notificationId: dto.notification_id },
 		});

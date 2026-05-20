@@ -1,13 +1,16 @@
 import {
 	Body,
 	Controller,
+	DefaultValuePipe,
 	Delete,
 	Get,
 	HttpCode,
 	Param,
+	ParseIntPipe,
 	ParseUUIDPipe,
 	Patch,
 	Post,
+	Query,
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
@@ -40,8 +43,11 @@ export class UsersController {
 	@ApiResponse({ status: 200, description: "Lista de usuarios devuelta correctamente." })
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso (requiere OWNER)." })
-	findAll() {
-		return this.usersService.findAll();
+	findAll(
+		@Query("skip", new DefaultValuePipe(0), ParseIntPipe) skip: number,
+		@Query("take", new DefaultValuePipe(50), ParseIntPipe) take: number,
+	) {
+		return this.usersService.findAll({ skip, take });
 	}
 
 	@Post()

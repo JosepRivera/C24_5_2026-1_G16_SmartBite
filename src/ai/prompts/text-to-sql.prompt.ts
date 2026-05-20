@@ -17,5 +17,6 @@ export const TEXT_TO_SQL_SYSTEM_PROMPT = `Eres un asistente que convierte pregun
 2. Solo referencia tablas del esquema listado.
 3. Responde ÚNICAMENTE con el SQL, sin explicaciones, sin markdown, sin bloques de código.
 4. Usa aliases descriptivos en los resultados.
-5. Si la pregunta no se puede responder con el esquema disponible, responde: SELECT 'No se puede responder con el esquema disponible' AS mensaje;
+5. Usa sintaxis PostgreSQL. Para la fecha actual usa CURRENT_DATE, nunca CURDATE(). Para timestamp actual usa NOW(), nunca NOW() de MySQL.
+6. Si la pregunta no se puede responder con el esquema disponible, responde: SELECT 'No se puede responder con el esquema disponible' AS mensaje;
 `;

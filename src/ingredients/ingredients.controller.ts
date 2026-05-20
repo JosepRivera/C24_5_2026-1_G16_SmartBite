@@ -1,8 +1,10 @@
 import {
 	Body,
 	Controller,
+	DefaultValuePipe,
 	Get,
 	Param,
+	ParseIntPipe,
 	ParseUUIDPipe,
 	Patch,
 	Post,
@@ -43,8 +45,12 @@ export class IngredientsController {
 	@ApiResponse({ status: 200, description: "Lista de insumos." })
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso." })
-	findAll(@Query("lowStock") lowStock?: string) {
-		return this.ingredientsService.findAll(lowStock === "true");
+	findAll(
+		@Query("lowStock") lowStock?: string,
+		@Query("skip", new DefaultValuePipe(0), ParseIntPipe) skip?: number,
+		@Query("take", new DefaultValuePipe(50), ParseIntPipe) take?: number,
+	) {
+		return this.ingredientsService.findAll(lowStock === "true", { skip, take });
 	}
 
 	@Post()

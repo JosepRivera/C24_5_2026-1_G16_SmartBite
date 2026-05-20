@@ -10,10 +10,7 @@ import { PrismaClient } from "../generated/prisma/client";
  * this service provides defense-in-depth by using a read-only DB connection.
  */
 @Injectable()
-export class ReadOnlyPrismaService
-	extends PrismaClient
-	implements OnModuleInit, OnModuleDestroy
-{
+export class ReadOnlyPrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
 	constructor() {
 		const connectionString = env.DATABASE_URL_READONLY ?? env.DATABASE_URL;
 		const adapter = new PrismaPg({ connectionString });

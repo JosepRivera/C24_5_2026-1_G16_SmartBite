@@ -63,7 +63,8 @@ export class VoiceController {
 		}
 
 		const validType: "sale" | "expense" | "ingredient_update" =
-			formType !== undefined && (formType as string) in { sale: 1, expense: 1, ingredient_update: 1 }
+			formType !== undefined &&
+			(formType as string) in { sale: 1, expense: 1, ingredient_update: 1 }
 				? formType
 				: "sale";
 

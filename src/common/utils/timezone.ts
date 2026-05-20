@@ -10,8 +10,7 @@ export const LIMA_TIMEZONE = "America/Lima";
  */
 export function toLimaDayRange(dateStr?: string): { start: Date; end: Date } {
 	const localDateStr =
-		dateStr ??
-		new Intl.DateTimeFormat("en-CA", { timeZone: LIMA_TIMEZONE }).format(new Date());
+		dateStr ?? new Intl.DateTimeFormat("en-CA", { timeZone: LIMA_TIMEZONE }).format(new Date());
 
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(localDateStr)) {
 		throw new BadRequestException("Fecha inválida. Formato esperado: YYYY-MM-DD");

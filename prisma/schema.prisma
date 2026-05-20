@@ -67,11 +67,12 @@ model User {
 }
 
 model Product {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  price     Decimal  @db.Decimal(10, 2)
-  category  String
-  isActive  Boolean  @default(true) @map("is_active")
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?  @default("")
+  price       Decimal  @db.Decimal(10, 2)
+  category    String
+  isActive    Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

@@ -26,4 +26,16 @@ export class AlertsController {
 	getLowStock() {
 		return this.alertsService.getLowStock();
 	}
+
+	@Get("operational")
+	@ApiOperation({
+		summary: "Alertas operativas del día",
+		description:
+			"Detecta: caja sin cerrar, órdenes abiertas sin cobrar, plan de producción faltante.",
+	})
+	@ApiResponse({ status: 200, description: "Lista de alertas operativas activas." })
+	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
+	getOperational() {
+		return this.alertsService.getOperational();
+	}
 }
