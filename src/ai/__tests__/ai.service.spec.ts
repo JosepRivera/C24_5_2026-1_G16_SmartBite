@@ -24,7 +24,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
 	},
 }));
 
-const mockPrisma = {
+const mockReadonlyPrisma = {
 	$queryRawUnsafe: vi.fn(),
 };
 
@@ -36,11 +36,11 @@ describe("AiService", () => {
 		mockAnthropicCreate.mockResolvedValue({
 			content: [{ type: "text", text: "SELECT * FROM products" }],
 		});
-		service = new AiService(mockPrisma as never);
+		service = new AiService(mockReadonlyPrisma as never);
 	});
 
 	it("ejecuta una consulta SELECT válida", async () => {
-		mockPrisma.$queryRawUnsafe.mockResolvedValue([{ id: "1", name: "Pizza" }]);
+		mockReadonlyPrisma.$queryRawUnsafe.mockResolvedValue([{ id: "1", name: "Pizza" }]);
 
 		const result = await service.query("¿Cuáles son los productos?");
 
@@ -68,5 +68,32 @@ describe("AiService", () => {
 		});
 
 		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("rechaza SQL con EXEC/EXECUTE", async () => {
+		mockAnthropicCreate.mockResolvedValueOnce({
+			content: [{ type: "text", text: "EXEC sp_tables" }],
+		});
+
+		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("rechaza SQL con UNION y subquery SELECT", async () => {
+		mockAnthropicCreate.mockResolvedValueOnce({
+			content: [{ type: "text", text: "SELECT 1 UNION SELECT password FROM users" }],
+		});
+
+		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("acepta SELECT con whitespace inicial", async () => {
+		mockAnthropicCreate.mockResolvedValueOnce({
+			content: [{ type: "text", text: "  SELECT * FROM products" }],
+		});
+		mockReadonlyPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+		const result = await service.query("test");
+
+		expect(result.sql).toBe("SELECT * FROM products");
 	});
 });

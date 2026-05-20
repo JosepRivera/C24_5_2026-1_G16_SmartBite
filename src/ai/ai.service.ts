@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { env } from "@/config/env";
 // biome-ignore lint/style/useImportType: required for NestJS DI
-import { PrismaService } from "@/prisma/prisma.service";
+import { ReadOnlyPrismaService } from "@/prisma/read-only.service";
 import { TEXT_TO_SQL_SYSTEM_PROMPT } from "./prompts/text-to-sql.prompt";
 
 const _ALLOWED_MODELS = ["claude-haiku-4-5-20251001"];
@@ -13,7 +13,7 @@ const SQL_UNION_SUBQUERY_PATTERN = /\bUNION\b[\s\S]*\bSELECT\b/i;
 
 @Injectable()
 export class AiService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(private readonly readonlyPrisma: ReadOnlyPrismaService) {}
 
 	private get anthropic() {
 		return new Anthropic({
@@ -73,7 +73,7 @@ export class AiService {
 
 		try {
 			const result = await Promise.race([
-				this.prisma.$queryRawUnsafe(sql),
+				this.readonlyPrisma.$queryRawUnsafe(sql),
 				new Promise((_, reject) =>
 					setTimeout(() => reject(new Error("timeout")), env.CLAUDE_TIMEOUT_INTERACTIVE),
 				),

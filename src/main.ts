@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
 import { env } from "@/config/env";
 import { AppModule } from "./app.module";
+import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
 
 async function bootstrap() {
@@ -22,7 +23,7 @@ async function bootstrap() {
 
 	app.useGlobalPipes(new ZodValidationPipe());
 
-	app.useGlobalInterceptors(new TransformInterceptor());
+	app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
 	const config = new DocumentBuilder()
 		.setTitle("SmartBite API")

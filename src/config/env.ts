@@ -21,6 +21,10 @@ export const envSchema = z.object({
 	// Database Configuration (Supabase)
 	DATABASE_URL: z.string().describe("Supabase Transaction Pooler URL (runtime queries)"),
 	DIRECT_URL: z.string().describe("Supabase Direct Connection URL (migrations, db execute)"),
+	DATABASE_URL_READONLY: z
+		.string()
+		.optional()
+		.describe("Supabase read-only connection URL (AI queries)"),
 
 	// Supabase Configuration
 	SUPABASE_URL: z.string().url().describe("Supabase project URL"),
