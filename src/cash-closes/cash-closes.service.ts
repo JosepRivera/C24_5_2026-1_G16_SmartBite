@@ -82,20 +82,14 @@ export class CashClosesService {
 			where.date = { ...(where.date as object), lte: toDate };
 		}
 
-		const [total, cashCloses] = await Promise.all([
-			this.prisma.cashClose.count({ where }),
-			this.prisma.cashClose.findMany({
-				where,
-				orderBy: { date: "desc" },
-				skip: (page - 1) * limit,
-				take: limit,
-			}),
-		]);
+		const cashCloses = await this.prisma.cashClose.findMany({
+			where,
+			orderBy: { date: "desc" },
+			skip: (page - 1) * limit,
+			take: limit,
+		});
 
-		return {
-			data: cashCloses.map(formatCashClose),
-			meta: { total, page, limit, pages: Math.ceil(total / limit) },
-		};
+		return cashCloses.map(formatCashClose);
 	}
 
 	async findOne(id: string) {
