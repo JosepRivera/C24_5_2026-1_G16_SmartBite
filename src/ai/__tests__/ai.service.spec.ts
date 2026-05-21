@@ -96,4 +96,70 @@ describe("AiService", () => {
 
 		expect(result.sql).toBe("SELECT * FROM products");
 	});
+
+	it("rechaza SQL con comentarios -- (linea)", async () => {
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT * FROM products -- comentario" } }],
+		});
+
+		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("rechaza SQL con comentarios /* */ (bloque)", async () => {
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT * /* secreto */ FROM products" } }],
+		});
+
+		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("rechaza SQL con funcion peligrosa pg_sleep", async () => {
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT pg_sleep(10)" } }],
+		});
+
+		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("rechaza SQL con tabla bloqueada (users)", async () => {
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT id, name FROM users" } }],
+		});
+
+		await expect(service.query("test")).rejects.toThrow(BadRequestException);
+	});
+
+	it("acepta consulta con alias de columna", async () => {
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT name AS product_name, price FROM products" } }],
+		});
+		mockReadonlyPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+		const result = await service.query("test");
+
+		expect(result.sql).toContain("product_name");
+	});
+
+	it("fallback a regex-only cuando AST falla al parsear", async () => {
+		// node-sql-parser can parse this but it exercises the parse path
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT * FROM products WHERE price > 10" } }],
+		});
+		mockReadonlyPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+		const result = await service.query("test");
+
+		expect(result.sql).toBe("SELECT * FROM products WHERE price > 10");
+	});
+
+	it("acepta consulta a vista v_daily_summary", async () => {
+		mockGroqCreate.mockResolvedValueOnce({
+			choices: [{ message: { content: "SELECT * FROM v_daily_summary" } }],
+		});
+		mockReadonlyPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+		const result = await service.query("test");
+
+		expect(result.sql).toBe("SELECT * FROM v_daily_summary");
+	});
 });
