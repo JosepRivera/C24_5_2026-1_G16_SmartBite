@@ -1,7 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import Groq from "groq-sdk";
 import { env } from "@/config/env";
+// biome-ignore lint/style/useImportType: required for NestJS DI
+import { GroqService } from "@/groq/groq.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
@@ -14,6 +15,7 @@ export class DemandScheduler {
 	constructor(
 		private readonly demandService: DemandService,
 		private readonly prisma: PrismaService,
+		private readonly groq: GroqService,
 	) {}
 
 	@Cron("0 6 * * *")
@@ -53,19 +55,15 @@ export class DemandScheduler {
 	private async getGroqMultiplier(
 		predictions: { productId: string; quantity: number }[],
 	): Promise<number> {
-		if (!env.GROQ_API_KEY) return 1;
+		const c = this.groq.getClient();
+		if (!c) return 1;
 
 		const total = predictions.reduce((sum, p) => sum + p.quantity, 0);
 		const prompt = `Se estima producir ${total} unidades totales mañana según el algoritmo Holt-Winters. Considerando el día de la semana y tendencias típicas de restaurante, ¿deberías ajustar la producción? Responde ÚNICAMENTE con un número decimal entre 0.5 y 2.0 que multiplique la predicción base. Ejemplo: 1.0 si no hay ajuste, 1.2 si debes aumentar 20%.`;
 
 		try {
-			const groq = new Groq({
-				apiKey: env.GROQ_API_KEY,
-				timeout: env.GROQ_TIMEOUT,
-			});
-
 			const response = await Promise.race([
-				groq.chat.completions.create({
+				c.chat.completions.create({
 					model: env.GROQ_TEXT_MODEL,
 					max_tokens: 16,
 					messages: [{ role: "user", content: prompt }],

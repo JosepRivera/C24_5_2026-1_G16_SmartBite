@@ -1,6 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
-import Groq from "groq-sdk";
 import { env } from "@/config/env";
+// biome-ignore lint/style/useImportType: required for NestJS DI
+import { GroqService } from "@/groq/groq.service";
 import { ENTITY_EXTRACTION_SYSTEM_PROMPTS } from "./prompts/entity-extraction.prompt";
 
 type FormType = "sale" | "expense" | "ingredient_update";
@@ -8,6 +9,8 @@ type FormType = "sale" | "expense" | "ingredient_update";
 @Injectable()
 export class VoiceService {
 	private readonly logger = new Logger(VoiceService.name);
+
+	constructor(private readonly groq: GroqService) {}
 
 	async transcribeAndExtract(audioBuffer: Buffer, mimeType: string, formType: FormType) {
 		const transcription = await this.transcribe(audioBuffer, mimeType);
@@ -17,19 +20,15 @@ export class VoiceService {
 	}
 
 	private async transcribe(audioBuffer: Buffer, mimeType: string): Promise<string> {
-		if (!env.GROQ_API_KEY) {
+		const c = this.groq.getClient();
+		if (!c) {
 			throw new ServiceUnavailableException("Servicio de transcripción no disponible");
 		}
-
-		const groq = new Groq({
-			apiKey: env.GROQ_API_KEY,
-			timeout: env.GROQ_TIMEOUT,
-		});
 
 		try {
 			const file = new File([audioBuffer], "audio.webm", { type: mimeType });
 
-			const result = await groq.audio.transcriptions.create({
+			const result = await c.audio.transcriptions.create({
 				file,
 				model: env.GROQ_WHISPER_MODEL,
 				language: "es",
@@ -46,19 +45,15 @@ export class VoiceService {
 		transcription: string,
 		formType: FormType,
 	): Promise<Record<string, unknown> | null> {
-		if (!env.GROQ_API_KEY) return null;
+		const c = this.groq.getClient();
+		if (!c) return null;
 
 		const systemPrompt = ENTITY_EXTRACTION_SYSTEM_PROMPTS[formType];
 		if (!systemPrompt) return null;
 
 		try {
-			const groq = new Groq({
-				apiKey: env.GROQ_API_KEY,
-				timeout: env.GROQ_TIMEOUT,
-			});
-
 			const response = await Promise.race([
-				groq.chat.completions.create({
+				c.chat.completions.create({
 					model: env.GROQ_TEXT_MODEL,
 					max_tokens: 512,
 					messages: [

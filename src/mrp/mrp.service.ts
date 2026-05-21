@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
-import Groq from "groq-sdk";
 import { env } from "@/config/env";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { DemandService } from "@/demand/demand.service";
+// biome-ignore lint/style/useImportType: required for NestJS DI
+import { GroqService } from "@/groq/groq.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
 
@@ -13,6 +14,7 @@ export class MrpService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly demandService: DemandService,
+		private readonly groq: GroqService,
 	) {}
 
 	async computeMrp(days: number) {
@@ -82,18 +84,14 @@ export class MrpService {
 
 		const fallback = `Para los próximos ${days} días, necesitas pedir:\n${tableText}`;
 
-		if (!env.GROQ_API_KEY) return fallback;
+		const c = this.groq.getClient();
+		if (!c) return fallback;
 
 		try {
-			const groq = new Groq({
-				apiKey: env.GROQ_API_KEY,
-				timeout: env.GROQ_TIMEOUT,
-			});
-
 			const prompt = `Redacta en español, de forma concisa y profesional, la lista de insumos a pedir para los próximos ${days} días en un restaurante. Los insumos son:\n${tableText}\n\nSé directo y usa máximo 3 oraciones.`;
 
 			const response = await Promise.race([
-				groq.chat.completions.create({
+				c.chat.completions.create({
 					model: env.GROQ_TEXT_MODEL,
 					max_tokens: 256,
 					messages: [{ role: "user", content: prompt }],

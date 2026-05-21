@@ -4,8 +4,9 @@ import {
 	Logger,
 	ServiceUnavailableException,
 } from "@nestjs/common";
-import Groq from "groq-sdk";
 import { env } from "@/config/env";
+// biome-ignore lint/style/useImportType: required for NestJS DI
+import { GroqService } from "@/groq/groq.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ReadOnlyPrismaService } from "@/prisma/read-only.service";
 import { TEXT_TO_SQL_SYSTEM_PROMPT } from "./prompts/text-to-sql.prompt";
@@ -56,24 +57,21 @@ function sanitizeResult(data: unknown): unknown {
 export class AiService {
 	private readonly logger = new Logger(AiService.name);
 
-	constructor(private readonly readonlyPrisma: ReadOnlyPrismaService) {}
-
-	private get groq() {
-		return new Groq({
-			apiKey: env.GROQ_API_KEY,
-			timeout: env.GROQ_TIMEOUT,
-		});
-	}
+	constructor(
+		private readonly readonlyPrisma: ReadOnlyPrismaService,
+		private readonly groq: GroqService,
+	) {}
 
 	async query(question: string) {
-		if (!env.GROQ_API_KEY) {
+		const c = this.groq.getClient();
+		if (!c) {
 			throw new ServiceUnavailableException("Servicio de IA no disponible");
 		}
 
 		let sql: string;
 
 		try {
-			const response = await this.groq.chat.completions.create({
+			const response = await c.chat.completions.create({
 				model: env.GROQ_TEXT_MODEL,
 				max_tokens: 512,
 				messages: [
