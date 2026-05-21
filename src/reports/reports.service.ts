@@ -1,9 +1,12 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnprocessableEntityException } from "@nestjs/common";
+import { Prisma } from "../generated/prisma/client";
 import { getLimaDate } from "@/common/utils/timezone";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
 
 type GroupBy = "day" | "week" | "month";
+
+const VALID_GROUP_BY: readonly GroupBy[] = ["day", "week", "month"] as const;
 
 interface ProfitabilityRow {
 	id: unknown;
@@ -15,43 +18,63 @@ interface ProfitabilityRow {
 	margin_percentage: unknown;
 }
 
+interface PeriodRow {
+	period: Date;
+	total_income: unknown;
+	order_count: unknown;
+}
+
 @Injectable()
 export class ReportsService {
 	constructor(private readonly prisma: PrismaService) {}
 
 	async getByPeriod(from: Date, to: Date, groupBy: GroupBy = "day", userId?: string) {
+		if (!VALID_GROUP_BY.includes(groupBy)) {
+			throw new UnprocessableEntityException(`groupBy must be one of: ${VALID_GROUP_BY.join(", ")}`);
+		}
+
 		const toDate = new Date(to);
 		toDate.setUTCDate(toDate.getUTCDate() + 1);
 
-		const sales = await this.prisma.sale.findMany({
-			where: {
-				status: { notIn: ["OPEN", "CANCELLED"] },
-				createdAt: { gte: from, lt: toDate },
-				...(userId ? { userId } : {}),
-			},
-			select: {
-				total: true,
-				status: true,
-				createdAt: true,
-			},
-			orderBy: { createdAt: "asc" },
-		});
+		// groupBy is validated against the whitelist above — safe to inline.
+		// Wrap in single quotes so DATE_TRUNC receives a string literal, not a column ref.
+		const period = Prisma.raw(`'${groupBy}'`);
 
-		const grouped = new Map<string, { total: number; count: number }>();
+		let rows: PeriodRow[];
 
-		for (const sale of sales) {
-			const key = getPeriodKey(sale.createdAt, groupBy);
-			const current = grouped.get(key) ?? { total: 0, count: 0 };
-			grouped.set(key, {
-				total: current.total + Number(sale.total),
-				count: current.count + 1,
-			});
+		if (userId) {
+			rows = await this.prisma.$queryRaw<PeriodRow[]>`
+				SELECT
+					DATE_TRUNC(${period}, "created_at" AT TIME ZONE 'America/Lima') AS period,
+					SUM("total") AS total_income,
+					COUNT(*) AS order_count
+				FROM "sales"
+				WHERE "status" NOT IN ('OPEN', 'CANCELLED')
+					AND "created_at" >= ${from}
+					AND "created_at" < ${toDate}
+					AND "user_id" = ${userId}
+				GROUP BY 1
+				ORDER BY 1 ASC
+			`;
+		} else {
+			rows = await this.prisma.$queryRaw<PeriodRow[]>`
+				SELECT
+					DATE_TRUNC(${period}, "created_at" AT TIME ZONE 'America/Lima') AS period,
+					SUM("total") AS total_income,
+					COUNT(*) AS order_count
+				FROM "sales"
+				WHERE "status" NOT IN ('OPEN', 'CANCELLED')
+					AND "created_at" >= ${from}
+					AND "created_at" < ${toDate}
+				GROUP BY 1
+				ORDER BY 1 ASC
+			`;
 		}
 
-		return Array.from(grouped.entries()).map(([period, data]) => ({
-			period,
-			total_income: data.total,
-			order_count: data.count,
+		return rows.map((row) => ({
+			period: formatPeriod(row.period, groupBy),
+			total_income: Number(row.total_income),
+			order_count: Number(row.order_count),
 		}));
 	}
 
@@ -72,18 +95,10 @@ export class ReportsService {
 	}
 }
 
-function getPeriodKey(date: Date, groupBy: GroupBy): string {
-	if (groupBy === "day") {
-		return getLimaDate(date);
-	}
+function formatPeriod(date: Date, groupBy: GroupBy): string {
+	const limaDate = getLimaDate(date);
 	if (groupBy === "month") {
-		return getLimaDate(date).slice(0, 7);
+		return limaDate.slice(0, 7);
 	}
-	// week: ISO week start (Monday) in Lima timezone
-	const limaDateStr = getLimaDate(date);
-	const d = new Date(`${limaDateStr}T12:00:00`); // noon to avoid DST edge cases
-	const day = d.getDay();
-	const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-	const monday = new Date(d.setDate(diff));
-	return monday.toISOString().slice(0, 10);
+	return limaDate;
 }

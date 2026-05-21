@@ -1,14 +1,20 @@
+import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
 import { env } from "@/config/env";
 import { AppModule } from "./app.module";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
+
+	app.enableShutdownHooks();
+
+	const logger = new Logger("Bootstrap");
 
 	app.setGlobalPrefix("api/v1");
 
@@ -25,6 +31,8 @@ async function bootstrap() {
 
 	app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
+	app.useGlobalFilters(new AllExceptionsFilter());
+
 	const config = new DocumentBuilder()
 		.setTitle("SmartBite API")
 		.setDescription("Backend del sistema de gestión inteligente para restaurantes")
@@ -40,8 +48,8 @@ async function bootstrap() {
 
 	await app.listen(env.PORT);
 
-	console.log(`Server running on http://localhost:${env.PORT}`);
-	console.log(`Swagger docs at http://localhost:${env.PORT}/api/docs`);
+	logger.log(`Server running on http://localhost:${env.PORT}`);
+	logger.log(`Swagger docs at http://localhost:${env.PORT}/api/docs`);
 }
 
 bootstrap();

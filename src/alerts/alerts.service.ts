@@ -17,19 +17,18 @@ export class AlertsService {
 
 	async getLowStock() {
 		const ingredients = await this.prisma.ingredient.findMany({
+			where: { stock: { lte: this.prisma.ingredient.fields.minStock } },
 			orderBy: { name: "asc" },
 		});
 
-		return ingredients
-			.filter((i) => Number(i.stock) <= Number(i.minStock))
-			.map((i) => ({
-				id: i.id,
-				name: i.name,
-				unit: i.unit,
-				stock: Number(i.stock),
-				min_stock: Number(i.minStock),
-				shortage: Number(i.minStock) - Number(i.stock),
-			}));
+		return ingredients.map((i) => ({
+			id: i.id,
+			name: i.name,
+			unit: i.unit,
+			stock: Number(i.stock),
+			min_stock: Number(i.minStock),
+			shortage: Number(i.minStock) - Number(i.stock),
+		}));
 	}
 
 	async getOperational(): Promise<OperationalAlert[]> {
