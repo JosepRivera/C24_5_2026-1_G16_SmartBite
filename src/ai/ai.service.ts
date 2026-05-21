@@ -1,20 +1,36 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+	BadRequestException,
+	Injectable,
+	Logger,
+	ServiceUnavailableException,
+} from "@nestjs/common";
 import Groq from "groq-sdk";
 import { env } from "@/config/env";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ReadOnlyPrismaService } from "@/prisma/read-only.service";
 import { TEXT_TO_SQL_SYSTEM_PROMPT } from "./prompts/text-to-sql.prompt";
+import { SqlValidationError, validateSqlAst } from "./sql-validator";
 
 const SQL_DANGEROUS_PATTERN =
 	/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
 const SQL_SELECT_PATTERN = /^\s*SELECT\b/i;
 const SQL_UNION_SUBQUERY_PATTERN = /\bUNION\b[\s\S]*\bSELECT\b/i;
+const SQL_COMMENT_PATTERN = /(--[^\n]*)|(\/\*[\s\S]*?\*\/)/;
+const SQL_DANGEROUS_FUNCTIONS_PATTERN =
+	/\b(pg_sleep|current_user|version\s*\(\s*\)|pg_read_file|lo_export|lo_import|dblink|copy\s+to|generate_series)\b/i;
 
 /** Extract SQL from markdown code blocks (e.g. ```sql ... ```) */
 function extractSql(content: string): string {
 	const match = content.match(/```(?:sql)?\s*\n?([\s\S]*?)```/);
-	if (match) return match[1].trim();
-	return content.trim();
+	return match ? match[1].trim() : content.trim();
+}
+
+/** Strip SQL comments for clean execution */
+function stripComments(sql: string): string {
+	return sql
+		.replace(/--[^\n]*/g, "")
+		.replace(/\/\*[\s\S]*?\*\//g, "")
+		.trim();
 }
 
 /** Recursively convert BigInt and Decimal values for JSON serialization */
@@ -38,6 +54,8 @@ function sanitizeResult(data: unknown): unknown {
 
 @Injectable()
 export class AiService {
+	private readonly logger = new Logger(AiService.name);
+
 	constructor(private readonly readonlyPrisma: ReadOnlyPrismaService) {}
 
 	private get groq() {
@@ -75,6 +93,7 @@ export class AiService {
 			throw new ServiceUnavailableException("Error al contactar el servicio de IA");
 		}
 
+		// Regex validation on raw SQL (includes comment detection)
 		const upperSql = sql.toUpperCase().trim();
 		if (!SQL_SELECT_PATTERN.test(upperSql)) {
 			throw new BadRequestException("Solo se permiten consultas SELECT");
@@ -90,6 +109,30 @@ export class AiService {
 
 		if (sql.includes(";")) {
 			throw new BadRequestException("Sentencias múltiples no permitidas");
+		}
+
+		if (SQL_COMMENT_PATTERN.test(sql)) {
+			throw new BadRequestException("Comentarios SQL no permitidos");
+		}
+
+		if (SQL_DANGEROUS_FUNCTIONS_PATTERN.test(sql)) {
+			throw new BadRequestException("Función SQL peligrosa detectada");
+		}
+
+		// Strip comments for AST validation and execution
+		sql = stripComments(sql);
+
+		// AST validation (semantic check) — after regex fast-fail
+		try {
+			validateSqlAst(sql);
+		} catch (err) {
+			if (err instanceof SqlValidationError) {
+				throw new BadRequestException(err.message);
+			}
+			// Parse failure → fall back to regex-only validation (don't block)
+			this.logger.warn(
+				`AST parse failed for SQL, falling back to regex-only: ${err instanceof Error ? err.message : err}`,
+			);
 		}
 
 		try {
