@@ -5,8 +5,9 @@ vi.mock("@/config/env", () => ({
 	env: {
 		SUPABASE_URL: "https://test.supabase.co",
 		SUPABASE_SERVICE_ROLE_KEY: "test-key",
-		ANTHROPIC_API_KEY: undefined,
-		CLAUDE_TIMEOUT_INTERACTIVE: 10000,
+		GROQ_API_KEY: undefined,
+		GROQ_TEXT_MODEL: "gpt-oss-120b",
+		GROQ_TIMEOUT: 10000,
 	},
 }));
 

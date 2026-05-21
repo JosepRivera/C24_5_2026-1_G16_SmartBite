@@ -7,10 +7,9 @@ vi.mock("@/config/env", () => ({
 		SUPABASE_URL: "https://test.supabase.co",
 		SUPABASE_SERVICE_ROLE_KEY: "test-key",
 		GROQ_API_KEY: "gsk_test",
+		GROQ_TEXT_MODEL: "gpt-oss-120b",
 		GROQ_WHISPER_MODEL: "whisper-large-v3-turbo",
 		GROQ_TIMEOUT: 15000,
-		ANTHROPIC_API_KEY: "sk-ant-test",
-		CLAUDE_TIMEOUT_INTERACTIVE: 10000,
 	},
 }));
 
@@ -18,16 +17,17 @@ const mockGroqTranscribe = vi.hoisted(() =>
 	vi.fn().mockResolvedValue({ text: "Vendí dos pizzas margherita" }),
 );
 
-const mockAnthropicCreate = vi.hoisted(() =>
+const mockGroqChatCreate = vi.hoisted(() =>
 	vi.fn().mockResolvedValue({
-		content: [
+		choices: [
 			{
-				type: "text",
-				text: JSON.stringify({
-					product_names: ["pizza margherita"],
-					quantities: [2],
-					payment_method: null,
-				}),
+				message: {
+					content: JSON.stringify({
+						product_names: ["pizza margherita"],
+						quantities: [2],
+						payment_method: null,
+					}),
+				},
 			},
 		],
 	}),
@@ -38,12 +38,9 @@ vi.mock("groq-sdk", () => ({
 		audio = {
 			transcriptions: { create: mockGroqTranscribe },
 		};
-	},
-}));
-
-vi.mock("@anthropic-ai/sdk", () => ({
-	default: class {
-		messages = { create: mockAnthropicCreate };
+		chat = {
+			completions: { create: mockGroqChatCreate },
+		};
 	},
 }));
 
@@ -53,15 +50,16 @@ describe("VoiceService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockGroqTranscribe.mockResolvedValue({ text: "Vendí dos pizzas margherita" });
-		mockAnthropicCreate.mockResolvedValue({
-			content: [
+		mockGroqChatCreate.mockResolvedValue({
+			choices: [
 				{
-					type: "text",
-					text: JSON.stringify({
-						product_names: ["pizza margherita"],
-						quantities: [2],
-						payment_method: null,
-					}),
+					message: {
+						content: JSON.stringify({
+							product_names: ["pizza margherita"],
+							quantities: [2],
+							payment_method: null,
+						}),
+					},
 				},
 			],
 		});
@@ -80,8 +78,8 @@ describe("VoiceService", () => {
 		expect((result.fields as Record<string, unknown>)?.product_names).toContain("pizza margherita");
 	});
 
-	it("retorna fields: null si Claude falla", async () => {
-		mockAnthropicCreate.mockRejectedValueOnce(new Error("API error"));
+	it("retorna fields: null si Groq falla", async () => {
+		mockGroqChatCreate.mockRejectedValueOnce(new Error("API error"));
 
 		const result = await service.transcribeAndExtract(
 			Buffer.from("fake-audio"),
@@ -93,7 +91,7 @@ describe("VoiceService", () => {
 		expect(result.fields).toBeNull();
 	});
 
-	it("lanza 503 si Groq falla", async () => {
+	it("lanza 503 si Groq falla en transcripción", async () => {
 		mockGroqTranscribe.mockRejectedValueOnce(new Error("network error"));
 
 		await expect(

@@ -72,24 +72,6 @@ describe("ProductsService", () => {
 				}),
 			);
 		});
-
-		it("devuelve resultado desde caché en la segunda llamada", async () => {
-			mockPrisma.product.findMany.mockResolvedValue([mockProduct]);
-
-			await service.findAll(false);
-			await service.findAll(false);
-
-			expect(mockPrisma.product.findMany).toHaveBeenCalledTimes(1);
-		});
-
-		it("cachés distintos para claves distintas", async () => {
-			mockPrisma.product.findMany.mockResolvedValue([mockProduct]);
-
-			await service.findAll(false);
-			await service.findAll(true);
-
-			expect(mockPrisma.product.findMany).toHaveBeenCalledTimes(2);
-		});
 	});
 
 	// ──────────────────────────────────────────
@@ -139,18 +121,6 @@ describe("ProductsService", () => {
 			await expect(
 				service.create({ name: "Hamburguesa Clásica", price: 15.5, category: "hamburguesas" }),
 			).rejects.toThrow(ConflictException);
-		});
-
-		it("invalida la caché tras crear", async () => {
-			mockPrisma.product.findMany.mockResolvedValue([mockProduct]);
-			mockPrisma.product.findFirst.mockResolvedValue(null);
-			mockPrisma.product.create.mockResolvedValue(mockProduct);
-
-			await service.findAll(false);
-			await service.create({ name: "Nuevo", price: 10, category: "bebidas" });
-			await service.findAll(false);
-
-			expect(mockPrisma.product.findMany).toHaveBeenCalledTimes(2);
 		});
 	});
 

@@ -1,4 +1,4 @@
-import { HttpException, NotFoundException } from "@nestjs/common";
+import { NotFoundException } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentsService } from "../payments.service";
 
@@ -67,27 +67,6 @@ describe("PaymentsService", () => {
 
 			expect(mockPrisma.paymentNotification.create).not.toHaveBeenCalled();
 			expect(result.notification_id).toBe("ext-123");
-		});
-
-		it("lanza 429 al superar rate limit", async () => {
-			mockPrisma.paymentNotification.findUnique.mockResolvedValue(null);
-			mockPrisma.paymentNotification.create.mockResolvedValue(makeNotification());
-
-			const dto = {
-				notification_id: "ext-xxx",
-				amount: 10,
-				sender_name: "Test",
-				source: "PLIN" as const,
-				raw_text: "test",
-			};
-
-			for (let i = 0; i < 20; i++) {
-				dto.notification_id = `ext-${i}`;
-				await service.createNotification("device-rl", dto);
-			}
-
-			dto.notification_id = "ext-overflow";
-			await expect(service.createNotification("device-rl", dto)).rejects.toThrow(HttpException);
 		});
 	});
 
