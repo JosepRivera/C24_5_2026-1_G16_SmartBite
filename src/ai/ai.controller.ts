@@ -6,11 +6,13 @@ import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { AiService } from "./ai.service";
 
 class AiQueryDto extends createZodDto(z.object({ question: z.string().min(1) })) {}
 
+@SkipThrottle()
 @ApiTags("ai")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard, RolesGuard)

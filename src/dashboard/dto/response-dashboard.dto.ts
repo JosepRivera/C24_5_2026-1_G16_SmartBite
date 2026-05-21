@@ -17,6 +17,7 @@ export const TimeSeriesEntrySchema = z.object({
 	income: z.number(),
 	expenses: z.number(),
 	profit: z.number(),
+	orders: z.number().int().optional(),
 });
 
 export const TopProductResponseSchema = z.object({

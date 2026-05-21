@@ -33,6 +33,7 @@ interface TimeSeriesRow {
 	date: unknown;
 	income: unknown;
 	expenses: unknown;
+	orders: unknown;
 }
 
 @Injectable()
@@ -42,6 +43,8 @@ export class DashboardService {
 	async getDailySummary(today: Date) {
 		const tomorrow = new Date(today);
 		tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+		const todayStr = today.toISOString();
+		const tomorrowStr = tomorrow.toISOString();
 
 		const [summary] = await this.prisma.$queryRaw<DailySummaryRow[]>`
       SELECT
@@ -51,7 +54,7 @@ export class DashboardService {
         COUNT(CASE WHEN status = 'OPEN' THEN 1 END) AS open_orders,
         COUNT(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN 1 END) AS paid_orders
       FROM sales
-      WHERE created_at >= ${today} AND created_at < ${tomorrow}
+      WHERE created_at >= ${todayStr}::timestamptz AND created_at < ${tomorrowStr}::timestamptz
     `;
 
 		const [expensesAgg, topProducts, yesterdayComparison, timeSeries] = await Promise.all([
@@ -72,10 +75,11 @@ export class DashboardService {
 				JOIN sales s    ON s.id = si.sale_id
 				LEFT JOIN v_product_profitability vpp ON vpp.id = si.product_id
 				WHERE s.status NOT IN ('OPEN', 'CANCELLED')
-					AND s.created_at >= ${today}
-					AND s.created_at <  ${tomorrow}
+					AND s.created_at >= ${todayStr}::timestamptz
+					AND s.created_at <  ${tomorrowStr}::timestamptz
 				GROUP BY si.product_id, p.name, p.category, vpp.margin_percentage
 				ORDER BY quantity DESC
+				LIMIT 10
 			`,
 			this.getYesterdayComparison(today),
 			this.getTimeSeries(today),
@@ -109,12 +113,15 @@ export class DashboardService {
 		const yesterday = new Date(today);
 		yesterday.setUTCDate(yesterday.getUTCDate() - 1);
 
+		const yesterdayStr = yesterday.toISOString();
+		const todayStr = today.toISOString();
+
 		const [summary] = await this.prisma.$queryRaw<YesterdaySummaryRow[]>`
       SELECT
         COALESCE(SUM(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN total ELSE 0 END), 0) AS total_income,
         COUNT(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN 1 END) AS tickets
       FROM sales
-      WHERE created_at >= ${yesterday} AND created_at < ${today}
+      WHERE created_at >= ${yesterdayStr}::timestamptz AND created_at < ${todayStr}::timestamptz
     `;
 
 		const expenseAgg = await this.prisma.expense.aggregate({
@@ -122,12 +129,13 @@ export class DashboardService {
 			where: { createdAt: { gte: yesterday, lt: today } },
 		});
 
+		const tomorrowStr = new Date(today.getTime() + 86400000).toISOString();
 		const todayIncome = await this.prisma.$queryRaw<{ total_income: unknown; tickets: unknown }[]>`
       SELECT
         COALESCE(SUM(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN total ELSE 0 END), 0) AS total_income,
         COUNT(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN 1 END) AS tickets
       FROM sales
-      WHERE created_at >= ${today} AND created_at < ${new Date(today.getTime() + 86400000)}
+      WHERE created_at >= ${todayStr}::timestamptz AND created_at < ${tomorrowStr}::timestamptz
     `;
 
 		const todayExpenses = await this.prisma.expense.aggregate({
@@ -166,37 +174,44 @@ export class DashboardService {
 	async getTimeSeries(today: Date): Promise<TimeSeriesEntry[]> {
 		const startDate = new Date(today);
 		startDate.setUTCDate(startDate.getUTCDate() - 29);
+		const startDateStr = startDate.toISOString();
 
 		const salesData = await this.prisma.$queryRaw<TimeSeriesRow[]>`
       SELECT
-        DATE(created_at) AS date,
-        COALESCE(SUM(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN total ELSE 0 END), 0) AS income
+        DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Lima') AS date,
+        COALESCE(SUM(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN total ELSE 0 END), 0) AS income,
+        COUNT(CASE WHEN status NOT IN ('CANCELLED','OPEN') THEN 1 END)::int AS orders
       FROM sales
-      WHERE created_at >= ${startDate}
-      GROUP BY DATE(created_at)
+      WHERE created_at >= ${startDateStr}::timestamptz
+      GROUP BY DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Lima')
       ORDER BY date ASC
     `;
 
 		const expenseData = await this.prisma.$queryRaw<{ date: unknown; expenses: unknown }[]>`
       SELECT
-        DATE(created_at) AS date,
+        DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Lima') AS date,
         COALESCE(SUM(amount), 0) AS expenses
       FROM expenses
-      WHERE created_at >= ${startDate}
-      GROUP BY DATE(created_at)
+      WHERE created_at >= ${startDateStr}::timestamptz
+      GROUP BY DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Lima')
       ORDER BY date ASC
     `;
 
 		// Build lookup maps
+		const toDateKey = (d: unknown): string =>
+			d instanceof Date ? d.toISOString().split("T")[0] : String(d).slice(0, 10);
+
 		const incomeMap = new Map<string, number>();
+		const ordersMap = new Map<string, number>();
 		for (const row of salesData) {
-			const dateStr = String(row.date);
+			const dateStr = toDateKey(row.date);
 			incomeMap.set(dateStr, Number(row.income));
+			ordersMap.set(dateStr, Number(row.orders ?? 0));
 		}
 
 		const expenseMap = new Map<string, number>();
 		for (const row of expenseData) {
-			const dateStr = String(row.date);
+			const dateStr = toDateKey(row.date);
 			expenseMap.set(dateStr, Number(row.expenses));
 		}
 
@@ -208,7 +223,8 @@ export class DashboardService {
 			const dateStr = d.toISOString().split("T")[0];
 			const income = incomeMap.get(dateStr) ?? 0;
 			const expenses = expenseMap.get(dateStr) ?? 0;
-			result.push({ date: dateStr, income, expenses, profit: income - expenses });
+			const orders = ordersMap.get(dateStr) ?? 0;
+			result.push({ date: dateStr, income, expenses, profit: income - expenses, orders });
 		}
 
 		return result;

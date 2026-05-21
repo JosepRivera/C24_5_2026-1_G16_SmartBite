@@ -24,14 +24,11 @@ export class DemandService {
 			select: { id: true },
 		});
 
-		const results: DemandPrediction[] = [];
+		const predictionsPerProduct = await Promise.all(
+			products.map((product) => this.predictForProduct(product.id, days)),
+		);
 
-		for (const product of products) {
-			const predictions = await this.predictForProduct(product.id, days);
-			results.push(...predictions);
-		}
-
-		return results;
+		return predictionsPerProduct.flat();
 	}
 
 	async predictForProduct(productId: string, days: number): Promise<DemandPrediction[]> {

@@ -31,8 +31,29 @@ export class AuthService {
 	 * Supabase genera y firma el JWT — nosotros NO manejamos el JWT.
 	 */
 	async login(dto: LoginDto) {
-		const email = `${dto.username}@smartbite.local`;
+		// 1. Buscar usuario en Prisma por username
+		const dbUser = await this.prisma.user.findUnique({
+			where: { username: dto.username },
+			select: { id: true, isActive: true },
+		});
 
+		if (!dbUser) {
+			throw new NotFoundException("Usuario no encontrado");
+		}
+
+		// 2. Obtener email real de Supabase Auth
+		const { data: authData, error: authError } = await this.supabase.admin.auth.admin.getUserById(dbUser.id);
+		if (authError || !authData.user) {
+			this.logger.error("Supabase getUserById error", authError);
+			throw new UnauthorizedException("Usuario no encontrado en auth");
+		}
+
+		const email = authData.user.email;
+		if (!email) {
+			throw new UnauthorizedException("Usuario sin email configurado");
+		}
+
+		// 3. Logear con el email real
 		const { data, error } = await this.supabase.admin.auth.signInWithPassword({
 			email,
 			password: dto.password,
@@ -41,6 +62,12 @@ export class AuthService {
 		if (error || !data.session) {
 			this.logger.error("Supabase login error", error);
 			throw new UnauthorizedException("Credenciales inválidas");
+		}
+
+		if (!dbUser.isActive) {
+			// Invalidar sesión recién creada — usuario desactivado
+			await this.supabase.admin.auth.admin.signOut(data.user.id);
+			throw new UnauthorizedException("Cuenta desactivada. Contactá al administrador.");
 		}
 
 		const user = await this.prisma.user.findUnique({
@@ -56,12 +83,6 @@ export class AuthService {
 
 		if (!user) {
 			throw new NotFoundException("Perfil de usuario no encontrado");
-		}
-
-		if (!user.isActive) {
-			// Invalidar sesión recién creada — usuario desactivado
-			await this.supabase.admin.auth.admin.signOut(data.user.id);
-			throw new UnauthorizedException("Cuenta desactivada. Contactá al administrador.");
 		}
 
 		return {

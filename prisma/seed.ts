@@ -378,8 +378,26 @@ async function seedUsers(): Promise<{ owner: string; cashiers: string[] }> {
 			continue;
 		}
 
+		const syntheticEmail = `${u.username}@smartbite.local`;
+		
+		// Check if user already exists in Supabase Auth (e.g. after DB reset)
+		const { data: listData } = await supabase.auth.admin.listUsers();
+		const existingAuthUser = listData?.users.find((user) => user.email === syntheticEmail);
+		
+		if (existingAuthUser) {
+			// Link existing Supabase Auth user to Prisma
+			await prisma.user.upsert({
+				where: { id: existingAuthUser.id },
+				create: { id: existingAuthUser.id, name: u.name, username: u.username, role: u.role },
+				update: { name: u.name, username: u.username, role: u.role },
+			});
+			ids[u.username] = existingAuthUser.id;
+			console.log(`[seed] user linked: ${u.username}`);
+			continue;
+		}
+		
 		const { data, error } = await supabase.auth.admin.createUser({
-			email: u.email,
+			email: syntheticEmail,
 			password: u.password,
 			email_confirm: true,
 			app_metadata: { role: u.role },
@@ -658,6 +676,42 @@ async function seedExpenses(ownerId: string, dailyTotals: Map<string, DailyTotal
 		// Misc: ~30% de los días
 		if (Math.random() < 0.3) addExpense(templates[rng(3, 5)]);
 	}
+
+	// Today's expenses (daysAgo=0) — prevents 100% margin on dashboard
+	const todayDate = utcDate(0);
+	const todayKey = todayDate.toISOString().slice(0, 10);
+	const todayDt = dailyTotals.get(todayKey) ?? { cash: 0, digital: 0, expenses: 0 };
+
+	// Always add ingredient purchase for today
+	const ingredientAmount = rng(150, 350);
+	const ingredientTs = new Date(todayDate);
+	ingredientTs.setUTCHours(rng(8, 10), rng(0, 59), 0, 0);
+	rows.push({
+		description: "Compra de ingredientes",
+		category: "Ingredientes",
+		amount: ingredientAmount,
+		userId: ownerId,
+		createdAt: ingredientTs,
+	});
+	todayDt.expenses = round2(todayDt.expenses + ingredientAmount);
+
+	// Random misc expense for today (~60% chance)
+	if (Math.random() < 0.6) {
+		const miscTemplate = templates[rng(3, 5)];
+		const miscAmount = rng(miscTemplate.min, miscTemplate.max);
+		const miscTs = new Date(todayDate);
+		miscTs.setUTCHours(rng(8, 10), rng(0, 59), 0, 0);
+		rows.push({
+			description: miscTemplate.description,
+			category: miscTemplate.category,
+			amount: miscAmount,
+			userId: ownerId,
+			createdAt: miscTs,
+		});
+		todayDt.expenses = round2(todayDt.expenses + miscAmount);
+	}
+
+	dailyTotals.set(todayKey, todayDt);
 
 	await prisma.expense.createMany({ data: rows });
 	console.log(`[seed] ${rows.length} gastos creados`);
