@@ -37,7 +37,7 @@ export const envSchema = z.object({
 	GROQ_API_KEY: z.string().startsWith("gsk_").optional().describe("Groq API key"),
 	GROQ_TEXT_MODEL: z
 		.string()
-		.default("gpt-oss-120b")
+		.default("openai/gpt-oss-120b")
 		.describe("Groq model for text generation"),
 	GROQ_WHISPER_MODEL: z
 		.string()

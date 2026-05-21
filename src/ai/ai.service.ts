@@ -10,6 +10,32 @@ const SQL_DANGEROUS_PATTERN =
 const SQL_SELECT_PATTERN = /^\s*SELECT\b/i;
 const SQL_UNION_SUBQUERY_PATTERN = /\bUNION\b[\s\S]*\bSELECT\b/i;
 
+/** Extract SQL from markdown code blocks (e.g. ```sql ... ```) */
+function extractSql(content: string): string {
+	const match = content.match(/```(?:sql)?\s*\n?([\s\S]*?)```/);
+	if (match) return match[1].trim();
+	return content.trim();
+}
+
+/** Recursively convert BigInt and Decimal values for JSON serialization */
+function sanitizeResult(data: unknown): unknown {
+	if (typeof data === "bigint") return data.toString();
+	// Prisma Decimal (decimal.js) objects have s, e, d properties
+	if (
+		data !== null &&
+		typeof data === "object" &&
+		"s" in data &&
+		"e" in data &&
+		"d" in data &&
+		Array.isArray((data as Record<string, unknown>).d)
+	)
+		return Number(data.toString());
+	if (Array.isArray(data)) return data.map(sanitizeResult);
+	if (data !== null && typeof data === "object")
+		return Object.fromEntries(Object.entries(data).map(([k, v]) => [k, sanitizeResult(v)]));
+	return data;
+}
+
 @Injectable()
 export class AiService {
 	constructor(private readonly readonlyPrisma: ReadOnlyPrismaService) {}
@@ -43,7 +69,7 @@ export class AiService {
 				throw new ServiceUnavailableException("Respuesta inválida del modelo");
 			}
 
-			sql = content.trim().replace(/;+$/, "");
+			sql = extractSql(content).replace(/;+$/, "");
 		} catch (err) {
 			if (err instanceof ServiceUnavailableException) throw err;
 			throw new ServiceUnavailableException("Error al contactar el servicio de IA");
@@ -74,7 +100,7 @@ export class AiService {
 				),
 			]);
 
-			return { sql, result };
+			return { sql, result: sanitizeResult(result) };
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Error al ejecutar la consulta";
 			if (message === "timeout") {
