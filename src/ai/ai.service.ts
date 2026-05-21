@@ -1,11 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import Groq from "groq-sdk";
 import { env } from "@/config/env";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ReadOnlyPrismaService } from "@/prisma/read-only.service";
 import { TEXT_TO_SQL_SYSTEM_PROMPT } from "./prompts/text-to-sql.prompt";
 
-const _ALLOWED_MODELS = ["claude-haiku-4-5-20251001"];
 const SQL_DANGEROUS_PATTERN =
 	/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
 const SQL_SELECT_PATTERN = /^\s*SELECT\b/i;
@@ -15,40 +14,36 @@ const SQL_UNION_SUBQUERY_PATTERN = /\bUNION\b[\s\S]*\bSELECT\b/i;
 export class AiService {
 	constructor(private readonly readonlyPrisma: ReadOnlyPrismaService) {}
 
-	private get anthropic() {
-		return new Anthropic({
-			apiKey: env.ANTHROPIC_API_KEY,
-			timeout: env.CLAUDE_TIMEOUT_INTERACTIVE,
+	private get groq() {
+		return new Groq({
+			apiKey: env.GROQ_API_KEY,
+			timeout: env.GROQ_TIMEOUT,
 		});
 	}
 
 	async query(question: string) {
-		if (!env.ANTHROPIC_API_KEY) {
+		if (!env.GROQ_API_KEY) {
 			throw new ServiceUnavailableException("Servicio de IA no disponible");
 		}
 
 		let sql: string;
 
 		try {
-			const response = await this.anthropic.messages.create({
-				model: "claude-haiku-4-5-20251001",
+			const response = await this.groq.chat.completions.create({
+				model: env.GROQ_TEXT_MODEL,
 				max_tokens: 512,
-				system: [
-					{
-						type: "text",
-						text: TEXT_TO_SQL_SYSTEM_PROMPT,
-						cache_control: { type: "ephemeral" },
-					},
+				messages: [
+					{ role: "system", content: TEXT_TO_SQL_SYSTEM_PROMPT },
+					{ role: "user", content: question },
 				],
-				messages: [{ role: "user", content: question }],
 			});
 
-			const textBlock = response.content.find((b) => b.type === "text");
-			if (!textBlock || textBlock.type !== "text") {
+			const content = response.choices[0]?.message?.content;
+			if (!content) {
 				throw new ServiceUnavailableException("Respuesta inválida del modelo");
 			}
 
-			sql = textBlock.text.trim().replace(/;+$/, "");
+			sql = content.trim().replace(/;+$/, "");
 		} catch (err) {
 			if (err instanceof ServiceUnavailableException) throw err;
 			throw new ServiceUnavailableException("Error al contactar el servicio de IA");
@@ -75,7 +70,7 @@ export class AiService {
 			const result = await Promise.race([
 				this.readonlyPrisma.$queryRawUnsafe(sql),
 				new Promise((_, reject) =>
-					setTimeout(() => reject(new Error("timeout")), env.CLAUDE_TIMEOUT_INTERACTIVE),
+					setTimeout(() => reject(new Error("timeout")), env.GROQ_TIMEOUT),
 				),
 			]);
 

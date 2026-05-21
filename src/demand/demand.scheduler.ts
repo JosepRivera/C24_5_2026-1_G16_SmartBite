@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import Groq from "groq-sdk";
 import { env } from "@/config/env";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
@@ -27,7 +27,7 @@ export class DemandScheduler {
 
 		const predictions = await this.demandService.predictNextDays(1);
 
-		const multiplier = await this.getClaudeMultiplier(predictions);
+		const multiplier = await this.getGroqMultiplier(predictions);
 
 		await this.prisma.$transaction(async (tx) => {
 			await tx.dailyProductionPlan.deleteMany({
@@ -41,7 +41,7 @@ export class DemandScheduler {
 						date: pred.date,
 						productId: pred.productId,
 						quantity: Math.max(0, Math.round(adjustedQty)),
-						predictionSource: multiplier !== 1 ? "holt-winters+claude" : "holt-winters",
+						predictionSource: multiplier !== 1 ? "holt-winters+groq" : "holt-winters",
 					},
 				});
 			}
@@ -50,40 +50,40 @@ export class DemandScheduler {
 		this.logger.log(`Plan diario generado: ${predictions.length} productos`);
 	}
 
-	private async getClaudeMultiplier(
+	private async getGroqMultiplier(
 		predictions: { productId: string; quantity: number }[],
 	): Promise<number> {
-		if (!env.ANTHROPIC_API_KEY) return 1;
+		if (!env.GROQ_API_KEY) return 1;
 
 		const total = predictions.reduce((sum, p) => sum + p.quantity, 0);
 		const prompt = `Se estima producir ${total} unidades totales mañana según el algoritmo Holt-Winters. Considerando el día de la semana y tendencias típicas de restaurante, ¿deberías ajustar la producción? Responde ÚNICAMENTE con un número decimal entre 0.5 y 2.0 que multiplique la predicción base. Ejemplo: 1.0 si no hay ajuste, 1.2 si debes aumentar 20%.`;
 
 		try {
-			const anthropic = new Anthropic({
-				apiKey: env.ANTHROPIC_API_KEY,
-				timeout: env.CLAUDE_TIMEOUT_BATCH,
+			const groq = new Groq({
+				apiKey: env.GROQ_API_KEY,
+				timeout: env.GROQ_TIMEOUT,
 			});
 
 			const response = await Promise.race([
-				anthropic.messages.create({
-					model: "claude-haiku-4-5-20251001",
+				groq.chat.completions.create({
+					model: env.GROQ_TEXT_MODEL,
 					max_tokens: 16,
 					messages: [{ role: "user", content: prompt }],
 				}),
 				new Promise<never>((_, reject) =>
-					setTimeout(() => reject(new Error("timeout")), env.CLAUDE_TIMEOUT_BATCH),
+					setTimeout(() => reject(new Error("timeout")), env.GROQ_TIMEOUT),
 				),
 			]);
 
-			const text = response.content.find((b) => b.type === "text");
-			if (text && text.type === "text") {
-				const val = Number.parseFloat(text.text.trim());
+			const content = response.choices[0]?.message?.content;
+			if (content) {
+				const val = Number.parseFloat(content.trim());
 				if (!Number.isNaN(val) && val >= 0.5 && val <= 2.0) {
 					return val;
 				}
 			}
 		} catch (_err) {
-			this.logger.warn("Claude no disponible para ajuste; usando predicción base");
+			this.logger.warn("Groq no disponible para ajuste; usando predicción base");
 		}
 
 		return 1;

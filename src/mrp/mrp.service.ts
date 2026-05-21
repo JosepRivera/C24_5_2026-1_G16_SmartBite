@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { Injectable, Logger } from "@nestjs/common";
+import Groq from "groq-sdk";
 import { env } from "@/config/env";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { DemandService } from "@/demand/demand.service";
@@ -82,33 +82,33 @@ export class MrpService {
 
 		const fallback = `Para los próximos ${days} días, necesitas pedir:\n${tableText}`;
 
-		if (!env.ANTHROPIC_API_KEY) return fallback;
+		if (!env.GROQ_API_KEY) return fallback;
 
 		try {
-			const anthropic = new Anthropic({
-				apiKey: env.ANTHROPIC_API_KEY,
-				timeout: env.CLAUDE_TIMEOUT_INTERACTIVE,
+			const groq = new Groq({
+				apiKey: env.GROQ_API_KEY,
+				timeout: env.GROQ_TIMEOUT,
 			});
 
 			const prompt = `Redacta en español, de forma concisa y profesional, la lista de insumos a pedir para los próximos ${days} días en un restaurante. Los insumos son:\n${tableText}\n\nSé directo y usa máximo 3 oraciones.`;
 
 			const response = await Promise.race([
-				anthropic.messages.create({
-					model: "claude-haiku-4-5-20251001",
+				groq.chat.completions.create({
+					model: env.GROQ_TEXT_MODEL,
 					max_tokens: 256,
 					messages: [{ role: "user", content: prompt }],
 				}),
 				new Promise<never>((_, reject) =>
-					setTimeout(() => reject(new Error("timeout")), env.CLAUDE_TIMEOUT_INTERACTIVE),
+					setTimeout(() => reject(new Error("timeout")), env.GROQ_TIMEOUT),
 				),
 			]);
 
-			const text = response.content.find((b) => b.type === "text");
-			if (text && text.type === "text") {
-				return text.text.trim();
+			const content = response.choices[0]?.message?.content;
+			if (content) {
+				return content.trim();
 			}
 		} catch {
-			this.logger.warn("Claude no disponible para resumen MRP; usando formato tabla");
+			this.logger.warn("Groq no disponible para resumen MRP; usando formato tabla");
 		}
 
 		return fallback;

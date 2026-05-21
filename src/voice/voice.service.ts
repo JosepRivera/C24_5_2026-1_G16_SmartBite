@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import Groq from "groq-sdk";
 import { env } from "@/config/env";
@@ -47,41 +46,37 @@ export class VoiceService {
 		transcription: string,
 		formType: FormType,
 	): Promise<Record<string, unknown> | null> {
-		if (!env.ANTHROPIC_API_KEY) return null;
+		if (!env.GROQ_API_KEY) return null;
 
 		const systemPrompt = ENTITY_EXTRACTION_SYSTEM_PROMPTS[formType];
 		if (!systemPrompt) return null;
 
 		try {
-			const anthropic = new Anthropic({
-				apiKey: env.ANTHROPIC_API_KEY,
-				timeout: env.CLAUDE_TIMEOUT_INTERACTIVE,
+			const groq = new Groq({
+				apiKey: env.GROQ_API_KEY,
+				timeout: env.GROQ_TIMEOUT,
 			});
 
 			const response = await Promise.race([
-				anthropic.messages.create({
-					model: "claude-haiku-4-5-20251001",
+				groq.chat.completions.create({
+					model: env.GROQ_TEXT_MODEL,
 					max_tokens: 512,
-					system: [
-						{
-							type: "text",
-							text: systemPrompt,
-							cache_control: { type: "ephemeral" },
-						},
+					messages: [
+						{ role: "system", content: systemPrompt },
+						{ role: "user", content: transcription },
 					],
-					messages: [{ role: "user", content: transcription }],
 				}),
 				new Promise<never>((_, reject) =>
-					setTimeout(() => reject(new Error("timeout")), env.CLAUDE_TIMEOUT_INTERACTIVE),
+					setTimeout(() => reject(new Error("timeout")), env.GROQ_TIMEOUT),
 				),
 			]);
 
-			const textBlock = response.content.find((b) => b.type === "text");
-			if (!textBlock || textBlock.type !== "text") return null;
+			const content = response.choices[0]?.message?.content;
+			if (!content) return null;
 
-			return JSON.parse(textBlock.text.trim()) as Record<string, unknown>;
+			return JSON.parse(content.trim()) as Record<string, unknown>;
 		} catch {
-			this.logger.warn("Claude no disponible para extracción de campos");
+			this.logger.warn("Groq no disponible para extracción de campos");
 			return null;
 		}
 	}
