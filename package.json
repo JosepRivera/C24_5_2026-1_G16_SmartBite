@@ -23,13 +23,13 @@
 		"dev:clean": "docker compose down -v"
 	},
 	"dependencies": {
-		"@nestjs/cache-manager": "^3.1.0",
 		"@nestjs/common": "^11.1.17",
 		"@nestjs/config": "^4.0.3",
 		"@nestjs/core": "^11.1.18",
 		"@nestjs/platform-express": "^11.1.18",
 		"@nestjs/schedule": "^6.1.1",
 		"@nestjs/swagger": "^11.2.6",
+		"@nestjs/throttler": "^6.5.0",
 		"@prisma/adapter-pg": "^7.7.0",
 		"@prisma/client": "^7.7.0",
 		"@supabase/supabase-js": "^2.103.0",
@@ -38,9 +38,9 @@
 		"helmet": "^8.1.0",
 		"jose": "^6.2.2",
 		"nestjs-zod": "^5.3.0",
+		"node-sql-parser": "^5.3.0",
 		"reflect-metadata": "^0.2.2",
 		"rxjs": "^7.8.2",
-		"node-sql-parser": "^5.3.0",
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {

@@ -4,9 +4,11 @@ import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ProductionPlansService } from "./production-plans.service";
 
+@SkipThrottle()
 @ApiTags("production-plans")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard, RolesGuard)

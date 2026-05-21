@@ -5,9 +5,11 @@ import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { DateParamPipe } from "@/common/pipes/date-param.pipe";
 import { Role } from "@/prisma/prisma.service";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ReportsService } from "./reports.service";
 
+@SkipThrottle()
 @ApiTags("reports")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard, RolesGuard)

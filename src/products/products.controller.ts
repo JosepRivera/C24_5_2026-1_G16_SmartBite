@@ -20,9 +20,11 @@ import { Role } from "@/prisma/prisma.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { UpdateProductDto } from "./dto/update-product.dto";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ProductsService } from "./products.service";
 
+@SkipThrottle()
 @ApiTags("products")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard)

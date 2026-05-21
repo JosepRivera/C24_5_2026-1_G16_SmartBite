@@ -16,9 +16,11 @@ import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { DevicesService } from "./devices.service";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { RegisterDeviceDto } from "./dto/register-device.dto";
 
+@SkipThrottle()
 @ApiTags("devices")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard, RolesGuard)

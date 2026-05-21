@@ -24,9 +24,11 @@ import { Role } from "@/prisma/prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { UsersService } from "./users.service";
 
+@SkipThrottle()
 @ApiTags("users")
 @Controller("users")
 @UseGuards(JwtGuard, RolesGuard)
@@ -35,7 +37,7 @@ export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
 	@Get()
-	@Roles("OWNER")
+	@Roles(Role.OWNER)
 	@ApiOperation({
 		summary: "Listar empleados",
 		description: "Devuelve todos los usuarios del sistema incluyendo desactivados. Solo OWNER.",
@@ -51,7 +53,7 @@ export class UsersController {
 	}
 
 	@Post()
-	@Roles("OWNER")
+	@Roles(Role.OWNER)
 	@ApiOperation({
 		summary: "Crear empleado",
 		description: "Crea una cuenta de empleado. No existe registro público. Solo OWNER.",
@@ -106,7 +108,7 @@ export class UsersController {
 	}
 
 	@Delete(":id")
-	@Roles("OWNER")
+	@Roles(Role.OWNER)
 	@ApiOperation({
 		summary: "Desactivar empleado",
 		description: "Soft delete: marca isActive = false. El historial se conserva. Solo OWNER.",

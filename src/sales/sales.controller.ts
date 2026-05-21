@@ -22,9 +22,11 @@ import { CorrectSaleDto } from "./dto/correct-sale.dto";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { PaySaleDto } from "./dto/pay-sale.dto";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { SalesService } from "./sales.service";
 
+@SkipThrottle()
 @ApiTags("sales")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard, RolesGuard)

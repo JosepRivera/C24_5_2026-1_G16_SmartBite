@@ -1,8 +1,11 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { validate } from "@/config/env";
 import { AiModule } from "./ai/ai.module";
+import { GroqModule } from "./groq/groq.module";
 import { AlertsModule } from "./alerts/alerts.module";
 import { AuthModule } from "./auth/auth.module";
 import { CashClosesModule } from "./cash-closes/cash-closes.module";
@@ -29,7 +32,9 @@ import { VoiceModule } from "./voice/voice.module";
 			isGlobal: true,
 			validate,
 		}),
+		ThrottlerModule.forRoot([{ ttl: 60000, limit: 10 }]),
 		ScheduleModule.forRoot(),
+		GroqModule,
 		PrismaModule,
 		SupabaseModule,
 		AuthModule,
@@ -51,5 +56,6 @@ import { VoiceModule } from "./voice/voice.module";
 		ProductionPlansModule,
 		VoiceModule,
 	],
+	providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

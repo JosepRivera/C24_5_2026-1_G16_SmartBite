@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Patch, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
@@ -24,6 +25,7 @@ export class AuthController {
 
 	@Post("login")
 	@HttpCode(200)
+	@Throttle({ default: { limit: 5, ttl: 60000 } })
 	@ApiOperation({
 		summary: "Login con usuario y contraseña",
 		description:
@@ -66,6 +68,7 @@ export class AuthController {
 
 	@Post("forgot-password")
 	@HttpCode(200)
+	@Throttle({ default: { limit: 5, ttl: 60000 } })
 	@ApiOperation({
 		summary: "Solicitar recuperación de contraseña",
 		description:

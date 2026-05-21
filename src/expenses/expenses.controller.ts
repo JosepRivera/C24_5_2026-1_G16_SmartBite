@@ -19,9 +19,11 @@ import { DateParamPipe } from "@/common/pipes/date-param.pipe";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { CreateExpenseDto } from "./dto/create-expense.dto";
+import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ExpensesService } from "./expenses.service";
 
+@SkipThrottle()
 @ApiTags("expenses")
 @ApiBearerAuth("access-token")
 @UseGuards(JwtGuard, RolesGuard)
