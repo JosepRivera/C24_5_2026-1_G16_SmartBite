@@ -28,6 +28,15 @@ const mockReadonlyPrisma = {
 	$queryRawUnsafe: vi.fn(),
 };
 
+const mockGroqClient = {
+	chat: { completions: { create: mockGroqCreate } },
+};
+
+const mockGroqService = {
+	getClient: () => mockGroqClient,
+	isAvailable: () => true,
+};
+
 describe("AiService", () => {
 	let service: AiService;
 
@@ -36,7 +45,7 @@ describe("AiService", () => {
 		mockGroqCreate.mockResolvedValue({
 			choices: [{ message: { content: "SELECT * FROM products" } }],
 		});
-		service = new AiService(mockReadonlyPrisma as never);
+		service = new AiService(mockReadonlyPrisma as never, mockGroqService as never);
 	});
 
 	it("ejecuta una consulta SELECT válida", async () => {

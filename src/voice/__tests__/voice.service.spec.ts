@@ -44,6 +44,16 @@ vi.mock("groq-sdk", () => ({
 	},
 }));
 
+const mockGroqClient = {
+	audio: { transcriptions: { create: mockGroqTranscribe } },
+	chat: { completions: { create: mockGroqChatCreate } },
+};
+
+const mockGroqService = {
+	getClient: () => mockGroqClient,
+	isAvailable: () => true,
+};
+
 describe("VoiceService", () => {
 	let service: VoiceService;
 
@@ -63,7 +73,7 @@ describe("VoiceService", () => {
 				},
 			],
 		});
-		service = new VoiceService();
+		service = new VoiceService(mockGroqService as never);
 	});
 
 	it("transcribe y extrae campos correctamente", async () => {

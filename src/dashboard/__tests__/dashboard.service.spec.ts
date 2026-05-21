@@ -165,8 +165,8 @@ describe("DashboardService", () => {
 		it("retorna 30 registros ordenados cronológicamente con zero-fill", async () => {
 			mockPrisma.$queryRaw
 				.mockResolvedValueOnce([
-					{ date: "2026-04-20", income: "500" },
-					{ date: "2026-04-22", income: "300" },
+					{ date: "2026-04-20", income: "500", orders: 5 },
+					{ date: "2026-04-22", income: "300", orders: 3 },
 				])
 				.mockResolvedValueOnce([
 					{ date: "2026-04-20", expenses: "100" },
@@ -183,11 +183,13 @@ describe("DashboardService", () => {
 			expect(day22.income).toBe(300);
 			expect(day22.expenses).toBe(0);
 			expect(day22.profit).toBe(300);
+			expect(day22.orders).toBe(3);
 			// Day with no data at all
 			const day21 = result.find((d) => d.date === "2026-04-21")!;
 			expect(day21.income).toBe(0);
 			expect(day21.expenses).toBe(0);
 			expect(day21.profit).toBe(0);
+			expect(day21.orders).toBe(0);
 		});
 
 		it("retorna 30 días en cero cuando no hay datos", async () => {
