@@ -33,28 +33,12 @@ export const envSchema = z.object({
 	// CORS Configuration
 	CORS_ORIGIN: z.string().url().optional().describe("CORS origin URL"),
 
-	// Anthropic Claude API Configuration
-	ANTHROPIC_API_KEY: z
+	// Groq API Configuration
+	GROQ_API_KEY: z.string().startsWith("gsk_").optional().describe("Groq API key"),
+	GROQ_TEXT_MODEL: z
 		.string()
-		.startsWith("sk-ant-")
-		.optional()
-		.describe("Anthropic API key for Claude models"),
-	ANTHROPIC_MODEL: z.string().default("claude-sonnet-4-6").describe("Anthropic model to use"),
-	CLAUDE_TIMEOUT_INTERACTIVE: z.coerce
-		.number()
-		.int()
-		.positive()
-		.default(10_000)
-		.describe("Timeout (ms) for interactive Claude requests"),
-	CLAUDE_TIMEOUT_BATCH: z.coerce
-		.number()
-		.int()
-		.positive()
-		.default(30_000)
-		.describe("Timeout (ms) for batch Claude requests"),
-
-	// Groq Whisper API Configuration
-	GROQ_API_KEY: z.string().startsWith("gsk_").optional().describe("Groq API key for Whisper model"),
+		.default("gpt-oss-120b")
+		.describe("Groq model for text generation"),
 	GROQ_WHISPER_MODEL: z
 		.string()
 		.default("whisper-large-v3-turbo")
