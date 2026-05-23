@@ -42,7 +42,9 @@ export class AuthService {
 		}
 
 		// 2. Obtener email real de Supabase Auth
-		const { data: authData, error: authError } = await this.supabase.admin.auth.admin.getUserById(dbUser.id);
+		const { data: authData, error: authError } = await this.supabase.admin.auth.admin.getUserById(
+			dbUser.id,
+		);
 		if (authError || !authData.user) {
 			this.logger.error("Supabase getUserById error", authError);
 			throw new UnauthorizedException("Usuario no encontrado en auth");

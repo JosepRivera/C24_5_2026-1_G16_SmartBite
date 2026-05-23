@@ -12,6 +12,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
@@ -20,7 +21,6 @@ import { Role } from "@/prisma/prisma.service";
 import { CreateIngredientDto } from "./dto/create-ingredient.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { UpdateIngredientDto } from "./dto/update-ingredient.dto";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { IngredientsService } from "./ingredients.service";
 

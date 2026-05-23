@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable, type OnModuleInit } from "@nestjs/common";
 import Groq from "groq-sdk";
 import { env } from "@/config/env";
 

@@ -1,10 +1,7 @@
 import { Injectable } from "@nestjs/common";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
-import type {
-	YesterdayComparison,
-	TimeSeriesEntry,
-} from "./dto/response-dashboard.dto";
+import type { TimeSeriesEntry, YesterdayComparison } from "./dto/response-dashboard.dto";
 
 interface DailySummaryRow {
 	cash_income: unknown;
@@ -160,7 +157,8 @@ export class DashboardService {
 
 		const calcDelta = (todayVal: number, yesterdayVal: number) => ({
 			delta: todayVal - yesterdayVal,
-			percent: yesterdayVal !== 0 ? ((todayVal - yesterdayVal) / Math.abs(yesterdayVal)) * 100 : null,
+			percent:
+				yesterdayVal !== 0 ? ((todayVal - yesterdayVal) / Math.abs(yesterdayVal)) * 100 : null,
 		});
 
 		return {

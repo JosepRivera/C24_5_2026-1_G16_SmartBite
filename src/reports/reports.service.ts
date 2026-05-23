@@ -1,8 +1,8 @@
 import { Injectable, UnprocessableEntityException } from "@nestjs/common";
-import { Prisma } from "../generated/prisma/client";
 import { getLimaDate } from "@/common/utils/timezone";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PrismaService } from "@/prisma/prisma.service";
+import { Prisma } from "../generated/prisma/client";
 
 type GroupBy = "day" | "week" | "month";
 
@@ -30,7 +30,9 @@ export class ReportsService {
 
 	async getByPeriod(from: Date, to: Date, groupBy: GroupBy = "day", userId?: string) {
 		if (!VALID_GROUP_BY.includes(groupBy)) {
-			throw new UnprocessableEntityException(`groupBy must be one of: ${VALID_GROUP_BY.join(", ")}`);
+			throw new UnprocessableEntityException(
+				`groupBy must be one of: ${VALID_GROUP_BY.join(", ")}`,
+			);
 		}
 
 		const toDate = new Date(to);

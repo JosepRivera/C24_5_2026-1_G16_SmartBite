@@ -31,7 +31,11 @@ describe("MrpService", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		service = new MrpService(mockPrisma as never, mockDemandService as never, mockGroqService as never);
+		service = new MrpService(
+			mockPrisma as never,
+			mockDemandService as never,
+			mockGroqService as never,
+		);
 	});
 
 	it("calcula correctamente los insumos a pedir", async () => {

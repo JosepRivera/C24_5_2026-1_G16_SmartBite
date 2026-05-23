@@ -11,6 +11,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
@@ -19,7 +20,6 @@ import { DateParamPipe } from "@/common/pipes/date-param.pipe";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { CreateExpenseDto } from "./dto/create-expense.dto";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ExpensesService } from "./expenses.service";
 

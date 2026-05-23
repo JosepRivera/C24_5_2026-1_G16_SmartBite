@@ -97,9 +97,9 @@ describe("ReportsService", () => {
 		});
 
 		it("throws UnprocessableEntityException for invalid groupBy", async () => {
-			await expect(
-				service.getByPeriod(from, to, "year" as never),
-			).rejects.toBeInstanceOf(UnprocessableEntityException);
+			await expect(service.getByPeriod(from, to, "year" as never)).rejects.toBeInstanceOf(
+				UnprocessableEntityException,
+			);
 		});
 
 		it("uses $queryRaw (not findMany) to perform DB-side grouping", async () => {

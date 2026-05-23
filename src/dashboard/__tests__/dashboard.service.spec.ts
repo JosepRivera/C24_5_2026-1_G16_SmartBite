@@ -33,29 +33,33 @@ describe("DashboardService", () => {
 			// 8. getTimeSeries: $queryRaw (sales)
 			// 9. getTimeSeries: $queryRaw (expenses)
 			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([{
-					cash_income: "500.00",
-					digital_income: "300.00",
-					total_income: "800.00",
-					open_orders: "2",
-					paid_orders: "10",
-				}])
-				.mockResolvedValueOnce([{
-					product_id: "prod-1",
-					name: "Hamburguesa",
-					category: "hamburguesas",
-					quantity: 8,
-					revenue: "120.00",
-					margin: "45.50",
-				}])
+				.mockResolvedValueOnce([
+					{
+						cash_income: "500.00",
+						digital_income: "300.00",
+						total_income: "800.00",
+						open_orders: "2",
+						paid_orders: "10",
+					},
+				])
+				.mockResolvedValueOnce([
+					{
+						product_id: "prod-1",
+						name: "Hamburguesa",
+						category: "hamburguesas",
+						quantity: 8,
+						revenue: "120.00",
+						margin: "45.50",
+					},
+				])
 				.mockResolvedValueOnce([{ total_income: "700.00", tickets: "8" }])
 				.mockResolvedValueOnce([{ total_income: "800.00", tickets: "10" }])
 				.mockResolvedValueOnce([{ date: "2026-05-19", income: "800.00" }])
 				.mockResolvedValueOnce([{ date: "2026-05-19", expenses: "150.00" }]);
 			mockPrisma.expense.aggregate
-				.mockResolvedValueOnce({ _sum: { amount: "150.00" } })   // getDailySummary today
-				.mockResolvedValueOnce({ _sum: { amount: "120.00" } })   // yesterday expenses
-				.mockResolvedValue({ _sum: { amount: "150.00" } });       // today expenses (default)
+				.mockResolvedValueOnce({ _sum: { amount: "150.00" } }) // getDailySummary today
+				.mockResolvedValueOnce({ _sum: { amount: "120.00" } }) // yesterday expenses
+				.mockResolvedValue({ _sum: { amount: "150.00" } }); // today expenses (default)
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getDailySummary(today);
@@ -93,9 +97,7 @@ describe("DashboardService", () => {
 				.mockResolvedValueOnce({ _sum: { amount: null } })
 				.mockResolvedValueOnce({ _sum: { amount: null } });
 			// getTimeSeries
-			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([])
-				.mockResolvedValueOnce([]);
+			mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getDailySummary(today);
@@ -115,8 +117,8 @@ describe("DashboardService", () => {
 			// today summary
 			mockPrisma.$queryRaw.mockResolvedValueOnce([{ total_income: "1000", tickets: "5" }]);
 			mockPrisma.expense.aggregate
-				.mockResolvedValueOnce({ _sum: { amount: "150" } })   // yesterday expenses
-				.mockResolvedValueOnce({ _sum: { amount: "200" } });  // today expenses
+				.mockResolvedValueOnce({ _sum: { amount: "150" } }) // yesterday expenses
+				.mockResolvedValueOnce({ _sum: { amount: "200" } }); // today expenses
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getYesterdayComparison(today);
@@ -134,7 +136,7 @@ describe("DashboardService", () => {
 			// today summary
 			mockPrisma.$queryRaw.mockResolvedValueOnce([{ total_income: "500", tickets: "3" }]);
 			mockPrisma.expense.aggregate
-				.mockResolvedValueOnce({ _sum: { amount: null } })  // yesterday: no expenses
+				.mockResolvedValueOnce({ _sum: { amount: null } }) // yesterday: no expenses
 				.mockResolvedValueOnce({ _sum: { amount: "100" } }); // today expenses
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
@@ -149,7 +151,7 @@ describe("DashboardService", () => {
 			// today summary
 			mockPrisma.$queryRaw.mockResolvedValueOnce([{ total_income: "500", tickets: "3" }]);
 			mockPrisma.expense.aggregate
-				.mockResolvedValueOnce({ _sum: { amount: "100" } })  // yesterday expenses
+				.mockResolvedValueOnce({ _sum: { amount: "100" } }) // yesterday expenses
 				.mockResolvedValueOnce({ _sum: { amount: "150" } }); // today expenses
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
@@ -168,9 +170,7 @@ describe("DashboardService", () => {
 					{ date: "2026-04-20", income: "500", orders: 5 },
 					{ date: "2026-04-22", income: "300", orders: 3 },
 				])
-				.mockResolvedValueOnce([
-					{ date: "2026-04-20", expenses: "100" },
-				]);
+				.mockResolvedValueOnce([{ date: "2026-04-20", expenses: "100" }]);
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getTimeSeries(today);
@@ -193,9 +193,7 @@ describe("DashboardService", () => {
 		});
 
 		it("retorna 30 días en cero cuando no hay datos", async () => {
-			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([])
-				.mockResolvedValueOnce([]);
+			mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getTimeSeries(today);
@@ -208,9 +206,24 @@ describe("DashboardService", () => {
 	describe("top products con margen", () => {
 		it("retorna margin null cuando el producto no tiene receta", async () => {
 			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([{ cash_income: "0", digital_income: "0", total_income: "100", open_orders: "0", paid_orders: "1" }])
 				.mockResolvedValueOnce([
-					{ product_id: "p1", name: "Sin receta", category: "otros", quantity: 1, revenue: "50", margin: null },
+					{
+						cash_income: "0",
+						digital_income: "0",
+						total_income: "100",
+						open_orders: "0",
+						paid_orders: "1",
+					},
+				])
+				.mockResolvedValueOnce([
+					{
+						product_id: "p1",
+						name: "Sin receta",
+						category: "otros",
+						quantity: 1,
+						revenue: "50",
+						margin: null,
+					},
 				]);
 			mockPrisma.expense.aggregate.mockResolvedValue({ _sum: { amount: null } });
 			// getYesterdayComparison
@@ -221,9 +234,7 @@ describe("DashboardService", () => {
 				.mockResolvedValueOnce({ _sum: { amount: null } })
 				.mockResolvedValueOnce({ _sum: { amount: null } });
 			// getTimeSeries
-			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([])
-				.mockResolvedValueOnce([]);
+			mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getDailySummary(today);
@@ -233,9 +244,24 @@ describe("DashboardService", () => {
 
 		it("retorna 100% margen cuando el costo es cero", async () => {
 			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([{ cash_income: "0", digital_income: "0", total_income: "100", open_orders: "0", paid_orders: "1" }])
 				.mockResolvedValueOnce([
-					{ product_id: "p1", name: "Gratis", category: "promo", quantity: 1, revenue: "50", margin: "100.00" },
+					{
+						cash_income: "0",
+						digital_income: "0",
+						total_income: "100",
+						open_orders: "0",
+						paid_orders: "1",
+					},
+				])
+				.mockResolvedValueOnce([
+					{
+						product_id: "p1",
+						name: "Gratis",
+						category: "promo",
+						quantity: 1,
+						revenue: "50",
+						margin: "100.00",
+					},
 				]);
 			mockPrisma.expense.aggregate.mockResolvedValue({ _sum: { amount: null } });
 			// getYesterdayComparison
@@ -246,9 +272,7 @@ describe("DashboardService", () => {
 				.mockResolvedValueOnce({ _sum: { amount: null } })
 				.mockResolvedValueOnce({ _sum: { amount: null } });
 			// getTimeSeries
-			mockPrisma.$queryRaw
-				.mockResolvedValueOnce([])
-				.mockResolvedValueOnce([]);
+			mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
 			const today = new Date("2026-05-19T05:00:00.000Z");
 			const result = await service.getDailySummary(today);
