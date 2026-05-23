@@ -13,10 +13,22 @@ export const CorrectSaleSchema = z
 			.min(1)
 			.optional(),
 		payment_method: z.enum(["CASH", "YAPE", "PLIN", "AGORA"]).optional(),
+		status: z.literal("CANCELLED").optional(),
 	})
-	.refine((data) => data.items !== undefined || data.payment_method !== undefined, {
-		message: "Debe especificar al menos items o payment_method",
-	});
+	.refine(
+		(data) => {
+			// When status === "CANCELLED", no other fields are allowed
+			if (data.status === "CANCELLED") {
+				return data.items === undefined && data.payment_method === undefined;
+			}
+			// Otherwise, at least one field must be present
+			return data.items !== undefined || data.payment_method !== undefined;
+		},
+		{
+			message:
+				"Cuando status es CANCELLED no se permiten otros campos. En corrección normal debe especificar al menos items o payment_method.",
+		},
+	);
 
 export type CorrectSale = z.infer<typeof CorrectSaleSchema>;
 

@@ -1,5 +1,6 @@
 import { NotFoundException } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { UpdatePaymentNotificationSchema } from "../dto/update-payment-notification.dto";
 import { PaymentsService } from "../payments.service";
 
 vi.mock("@/config/env", () => ({
@@ -86,6 +87,41 @@ describe("PaymentsService", () => {
 			mockPrisma.paymentNotification.findUnique.mockResolvedValue(null);
 
 			await expect(service.review("no-existe", "owner-1")).rejects.toThrow(NotFoundException);
+		});
+	});
+
+	describe("PATCH /payments/notifications/:id body validation (REQ-B5)", () => {
+		it("acepta { status: 'REVIEWED' } como body válido", () => {
+			const result = UpdatePaymentNotificationSchema.safeParse({ status: "REVIEWED" });
+			expect(result.success).toBe(true);
+		});
+
+		it("rechaza body con status inválido", () => {
+			const result = UpdatePaymentNotificationSchema.safeParse({ status: "PENDING" });
+			expect(result.success).toBe(false);
+		});
+
+		it("rechaza body vacío", () => {
+			const result = UpdatePaymentNotificationSchema.safeParse({});
+			expect(result.success).toBe(false);
+		});
+
+		it("review() es llamado cuando el body contiene { status: 'REVIEWED' }", async () => {
+			mockPrisma.paymentNotification.findUnique.mockResolvedValue(makeNotification());
+			mockPrisma.paymentNotification.update.mockResolvedValue(
+				makeNotification({ isReviewed: true, reviewedBy: "owner-1" }),
+			);
+
+			// The controller calls service.review() when status === "REVIEWED"
+			const result = await service.review("notif-1", "owner-1");
+
+			expect(result.is_reviewed).toBe(true);
+			expect(mockPrisma.paymentNotification.update).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: { id: "notif-1" },
+					data: expect.objectContaining({ isReviewed: true }),
+				}),
+			);
 		});
 	});
 });

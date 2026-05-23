@@ -18,6 +18,8 @@ import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { CreatePaymentNotificationDto } from "./dto/create-payment-notification.dto";
+// biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
+import { UpdatePaymentNotificationDto } from "./dto/update-payment-notification.dto";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { PaymentsService } from "./payments.service";
 
@@ -52,16 +54,21 @@ export class PaymentsController {
 		return this.paymentsService.findAll();
 	}
 
-	@Patch("notifications/:id/review")
+	@Patch("notifications/:id")
 	@ApiBearerAuth("access-token")
 	@UseGuards(JwtGuard, RolesGuard)
 	@Roles(Role.OWNER)
-	@ApiOperation({ summary: "Marcar notificación como revisada" })
-	@ApiResponse({ status: 200, description: "Notificación revisada." })
+	@ApiOperation({ summary: "Actualizar notificación de pago (ej: marcar como revisada)" })
+	@ApiResponse({ status: 200, description: "Notificación actualizada." })
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso." })
 	@ApiResponse({ status: 404, description: "Notificación no encontrada." })
-	review(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: { sub: string }) {
+	@ApiResponse({ status: 422, description: "Cuerpo de la solicitud inválido." })
+	updateNotification(
+		@Param("id", ParseUUIDPipe) id: string,
+		@Body() dto: UpdatePaymentNotificationDto,
+		@CurrentUser() user: { sub: string },
+	) {
 		return this.paymentsService.review(id, user.sub);
 	}
 }

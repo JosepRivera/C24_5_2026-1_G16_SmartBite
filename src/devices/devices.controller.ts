@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	HttpCode,
 	Param,
@@ -9,6 +10,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
@@ -16,7 +18,6 @@ import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { DevicesService } from "./devices.service";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { RegisterDeviceDto } from "./dto/register-device.dto";
 
@@ -28,7 +29,7 @@ import { RegisterDeviceDto } from "./dto/register-device.dto";
 export class DevicesController {
 	constructor(private readonly devicesService: DevicesService) {}
 
-	@Post("register")
+	@Post()
 	@Roles(Role.OWNER)
 	@ApiOperation({ summary: "Registrar dispositivo y obtener API key" })
 	@ApiResponse({
@@ -51,7 +52,7 @@ export class DevicesController {
 		return this.devicesService.findAll();
 	}
 
-	@Post(":id/revoke")
+	@Delete(":id")
 	@HttpCode(200)
 	@Roles(Role.OWNER)
 	@ApiOperation({ summary: "Revocar dispositivo" })

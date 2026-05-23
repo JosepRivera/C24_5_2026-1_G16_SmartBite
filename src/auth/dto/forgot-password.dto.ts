@@ -1,10 +1,15 @@
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 
-export const ForgotPasswordSchema = z.object({
+export const PasswordRecoveryRequestSchema = z.object({
 	email: z.email("Formato de email inválido"),
 });
 
-export type ForgotPasswordDto = z.infer<typeof ForgotPasswordSchema>;
+export type PasswordRecoveryRequestDto = z.infer<typeof PasswordRecoveryRequestSchema>;
 
-export class ForgotPasswordDtoClass extends createZodDto(ForgotPasswordSchema) {}
+export class PasswordRecoveryRequestDtoClass extends createZodDto(PasswordRecoveryRequestSchema) {}
+
+// Backward-compat aliases (kept to avoid breaking any other imports)
+export const ForgotPasswordSchema = PasswordRecoveryRequestSchema;
+export type ForgotPasswordDto = PasswordRecoveryRequestDto;
+export class ForgotPasswordDtoClass extends PasswordRecoveryRequestDtoClass {}

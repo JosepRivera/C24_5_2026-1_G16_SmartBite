@@ -1,6 +1,7 @@
 import {
 	BadRequestException,
 	Controller,
+	HttpCode,
 	Post,
 	Query,
 	UploadedFile,
@@ -17,11 +18,11 @@ import {
 	ApiResponse,
 	ApiTags,
 } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { VoiceService } from "./voice.service";
 
@@ -33,7 +34,8 @@ import { VoiceService } from "./voice.service";
 export class VoiceController {
 	constructor(private readonly voiceService: VoiceService) {}
 
-	@Post("transcribe")
+	@Post("transcriptions")
+	@HttpCode(201)
 	@Roles(Role.OWNER, Role.CASHIER, Role.WAITER, Role.COOK)
 	@UseInterceptors(FileInterceptor("audio"))
 	@ApiConsumes("multipart/form-data")

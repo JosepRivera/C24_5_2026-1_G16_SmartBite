@@ -1,10 +1,10 @@
-import { Controller, Get, HttpCode, Post, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpCode, Put, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { ProductionPlansService } from "./production-plans.service";
 
@@ -27,7 +27,7 @@ export class ProductionPlansController {
 		return this.productionPlansService.getToday();
 	}
 
-	@Post("regenerate")
+	@Put("current")
 	@HttpCode(200)
 	@Roles(Role.OWNER)
 	@ApiOperation({ summary: "Regenerar plan de producción manualmente" })

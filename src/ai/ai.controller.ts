@@ -1,12 +1,12 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, HttpCode, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Role } from "@/prisma/prisma.service";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { AiService } from "./ai.service";
 
@@ -20,7 +20,8 @@ class AiQueryDto extends createZodDto(z.object({ question: z.string().min(1) }))
 export class AiController {
 	constructor(private readonly aiService: AiService) {}
 
-	@Post("query")
+	@Post("queries")
+	@HttpCode(201)
 	@Roles(Role.OWNER)
 	@ApiOperation({ summary: "Consultar la base de datos en lenguaje natural" })
 	@ApiResponse({ status: 200, description: "Resultado de la consulta." })

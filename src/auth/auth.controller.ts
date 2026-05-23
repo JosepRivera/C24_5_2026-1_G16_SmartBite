@@ -8,13 +8,13 @@ import { RolesGuard } from "@/common/guards/roles.guard";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { AuthService } from "./auth.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
-import { ForgotPasswordDtoClass } from "./dto/forgot-password.dto";
+import { PasswordRecoveryRequestDtoClass } from "./dto/forgot-password.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { LoginDtoClass } from "./dto/login.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { RefreshDtoClass } from "./dto/refresh.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
-import { ResetPasswordDtoClass } from "./dto/reset-password.dto";
+import { UpdatePasswordDtoClass } from "./dto/reset-password.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { UpdateOwnerEmailDtoClass } from "./dto/update-owner-email.dto";
 
@@ -66,7 +66,7 @@ export class AuthController {
 		return this.authService.refresh(dto);
 	}
 
-	@Post("forgot-password")
+	@Post("password-recovery")
 	@HttpCode(200)
 	@Throttle({ default: { limit: 5, ttl: 60000 } })
 	@ApiOperation({
@@ -76,11 +76,11 @@ export class AuthController {
 			"Siempre retorna éxito para evitar email enumeration.",
 	})
 	@ApiResponse({ status: 200, description: "Instrucciones enviadas (si el email existe)." })
-	forgotPassword(@Body() dto: ForgotPasswordDtoClass) {
+	forgotPassword(@Body() dto: PasswordRecoveryRequestDtoClass) {
 		return this.authService.forgotPassword(dto);
 	}
 
-	@Post("reset-password")
+	@Patch("password")
 	@HttpCode(200)
 	@UseGuards(JwtGuard)
 	@ApiBearerAuth("access-token")
@@ -93,7 +93,7 @@ export class AuthController {
 	@ApiResponse({ status: 200, description: "Contraseña actualizada correctamente." })
 	@ApiResponse({ status: 401, description: "Token de recuperación inválido o expirado." })
 	@ApiResponse({ status: 500, description: "Error interno al actualizar la contraseña." })
-	resetPassword(@CurrentUser() user: { sub: string }, @Body() dto: ResetPasswordDtoClass) {
+	resetPassword(@CurrentUser() user: { sub: string }, @Body() dto: UpdatePasswordDtoClass) {
 		return this.authService.resetPassword(user.sub, dto);
 	}
 

@@ -1,7 +1,9 @@
 import {
 	Body,
 	Controller,
+	ForbiddenException,
 	Get,
+	HttpCode,
 	Param,
 	ParseUUIDPipe,
 	Patch,
@@ -10,6 +12,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
@@ -22,7 +25,6 @@ import { CorrectSaleDto } from "./dto/correct-sale.dto";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { PaySaleDto } from "./dto/pay-sale.dto";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { SalesService } from "./sales.service";
 
@@ -90,14 +92,15 @@ export class SalesController {
 		return this.salesService.findOne(id);
 	}
 
-	@Patch(":id/pay")
+	@Post(":id/payments")
+	@HttpCode(201)
 	@Roles(Role.OWNER, Role.CASHIER)
 	@ApiOperation({
-		summary: "Cobrar venta",
+		summary: "Registrar pago de venta",
 		description:
-			"Marca la venta como pagada y descuenta el stock de insumos según las recetas. Operación atómica.",
+			"Crea el pago de la venta y descuenta el stock de insumos según las recetas. Operación atómica.",
 	})
-	@ApiResponse({ status: 200, description: "Venta cobrada." })
+	@ApiResponse({ status: 201, description: "Pago registrado." })
 	@ApiResponse({ status: 400, description: "UUID mal formado o validación fallida." })
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso." })
@@ -111,40 +114,31 @@ export class SalesController {
 		return this.salesService.pay(id, user.sub, dto);
 	}
 
-	@Patch(":id/cancel")
+	@Patch(":id")
 	@Roles(Role.OWNER, Role.CASHIER)
 	@ApiOperation({
-		summary: "Cancelar venta",
-		description: "Cancela una venta que está en estado OPEN. No revierte stock.",
-	})
-	@ApiResponse({ status: 200, description: "Venta cancelada." })
-	@ApiResponse({ status: 400, description: "UUID mal formado." })
-	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
-	@ApiResponse({ status: 403, description: "Rol sin permiso." })
-	@ApiResponse({ status: 404, description: "Venta no encontrada." })
-	@ApiResponse({ status: 422, description: "La venta no está en estado OPEN." })
-	cancel(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: { sub: string }) {
-		return this.salesService.cancel(id, user.sub);
-	}
-
-	@Patch(":id")
-	@Roles(Role.OWNER)
-	@ApiOperation({
-		summary: "Corregir venta (OPS-6)",
+		summary: "Corregir o cancelar venta",
 		description:
-			"Corrige los ítems o el método de pago de una venta. Solo OWNER. No revierte stock. No se puede corregir una venta CANCELLED.",
+			"Con { status: 'CANCELLED' }: cancela la venta (OWNER y CASHIER). Sin status: corrige ítems o método de pago (solo OWNER). No revierte stock.",
 	})
-	@ApiResponse({ status: 200, description: "Venta corregida." })
+	@ApiResponse({ status: 200, description: "Venta actualizada." })
 	@ApiResponse({ status: 400, description: "UUID mal formado o validación fallida." })
 	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
 	@ApiResponse({ status: 403, description: "Rol sin permiso." })
 	@ApiResponse({ status: 404, description: "Venta no encontrada." })
-	@ApiResponse({ status: 422, description: "La venta está cancelada." })
+	@ApiResponse({ status: 422, description: "La venta no está en estado OPEN o está cancelada." })
 	correct(
 		@Param("id", ParseUUIDPipe) id: string,
-		@CurrentUser() user: { sub: string },
+		@CurrentUser() user: { sub: string; role: string },
 		@Body() dto: CorrectSaleDto,
 	) {
+		if (dto.status === "CANCELLED") {
+			return this.salesService.cancel(id, user.sub);
+		}
+		// Correction (items/payment_method update) is OWNER-only
+		if (user.role !== Role.OWNER) {
+			throw new ForbiddenException("Solo el OWNER puede corregir ventas");
+		}
 		return this.salesService.correct(id, user.sub, dto);
 	}
 }
