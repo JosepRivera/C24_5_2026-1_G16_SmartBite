@@ -1,6 +1,7 @@
 import {
 	ConflictException,
 	ForbiddenException,
+	InternalServerErrorException,
 	NotFoundException,
 	UnprocessableEntityException,
 } from "@nestjs/common";
@@ -168,6 +169,68 @@ describe("UsersService", () => {
 
 			expect(mockSupabaseAdmin.auth.admin.updateUserById).toHaveBeenCalledWith("cashier-id", {
 				app_metadata: { role: "WAITER" },
+			});
+		});
+	});
+
+	describe("resetPassword()", () => {
+		const targetId = "target-user-id";
+		const dto = { password: "newpass123" };
+
+		it("OWNER intenta resetear su propia contraseña → 403", async () => {
+			// A-3.1: OWNER self-reset is forbidden
+			const selfOwner = { sub: targetId, role: "OWNER" as const };
+
+			await expect(service.resetPassword(targetId, dto, selfOwner)).rejects.toThrow(
+				ForbiddenException,
+			);
+		});
+
+		it("llamador no-OWNER → 403", async () => {
+			// A-3.2: non-OWNER caller is rejected
+			await expect(service.resetPassword(targetId, dto, cashierUser)).rejects.toThrow(
+				ForbiddenException,
+			);
+		});
+
+		it("usuario objetivo no existe → 404", async () => {
+			// A-3.5: target user not found
+			mockPrisma.user.findUnique.mockResolvedValue(null);
+
+			await expect(service.resetPassword(targetId, dto, ownerUser)).rejects.toThrow(
+				NotFoundException,
+			);
+		});
+
+		it("error de Supabase Admin → 500 sin filtrar detalle interno", async () => {
+			// A-3.4: Supabase Admin error must not leak detail
+			mockPrisma.user.findUnique.mockResolvedValue({ id: targetId });
+			mockSupabaseAdmin.auth.admin.updateUserById.mockResolvedValue({
+				error: { message: "upstream supabase internal detail" },
+			});
+
+			await expect(service.resetPassword(targetId, dto, ownerUser)).rejects.toThrow(
+				InternalServerErrorException,
+			);
+
+			try {
+				await service.resetPassword(targetId, dto, ownerUser);
+			} catch (err) {
+				expect((err as InternalServerErrorException).message).not.toContain(
+					"upstream supabase internal detail",
+				);
+			}
+		});
+
+		it("OWNER reseta contraseña de otro usuario → { ok: true }", async () => {
+			mockPrisma.user.findUnique.mockResolvedValue({ id: targetId });
+			mockSupabaseAdmin.auth.admin.updateUserById.mockResolvedValue({ error: null });
+
+			const result = await service.resetPassword(targetId, dto, ownerUser);
+
+			expect(result).toEqual({ ok: true });
+			expect(mockSupabaseAdmin.auth.admin.updateUserById).toHaveBeenCalledWith(targetId, {
+				password: dto.password,
 			});
 		});
 	});

@@ -14,6 +14,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { JwtGuard } from "@/common/guards/jwt.guard";
@@ -23,8 +24,9 @@ import { Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { CreateUserDto } from "./dto/create-user.dto";
 // biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
+import { ResetUserPasswordDto } from "./dto/reset-password.dto";
+// biome-ignore lint/style/useImportType: required for nestjs-zod ZodValidationPipe runtime metatype
 import { UpdateUserDto } from "./dto/update-user.dto";
-import { SkipThrottle } from "@nestjs/throttler";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { UsersService } from "./users.service";
 
@@ -105,6 +107,28 @@ export class UsersController {
 		@CurrentUser() user: { sub: string; role: Role },
 	) {
 		return this.usersService.update(id, dto, user);
+	}
+
+	@Patch(":id/password")
+	@HttpCode(200)
+	@Roles(Role.OWNER)
+	@ApiOperation({
+		summary: "Resetear contraseña de empleado",
+		description:
+			"OWNER fija una nueva contraseña a un empleado (admin override). El OWNER no puede resetear su propia contraseña por esta vía — debe usar el flujo self-service de /auth.",
+	})
+	@ApiParam({ name: "id", description: "UUID del usuario", format: "uuid" })
+	@ApiResponse({ status: 200, description: "Contraseña reseteada." })
+	@ApiResponse({ status: 400, description: "UUID mal formado o validación fallida." })
+	@ApiResponse({ status: 401, description: "Token ausente o inválido." })
+	@ApiResponse({ status: 403, description: "Sin permiso o intento de resetearse a sí mismo." })
+	@ApiResponse({ status: 404, description: "Usuario no encontrado." })
+	resetPassword(
+		@Param("id", ParseUUIDPipe) id: string,
+		@Body() dto: ResetUserPasswordDto,
+		@CurrentUser() user: { sub: string; role: Role },
+	) {
+		return this.usersService.resetPassword(id, dto, user);
 	}
 
 	@Delete(":id")

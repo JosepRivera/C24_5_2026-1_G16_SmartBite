@@ -11,6 +11,7 @@ import { PrismaService, Role } from "@/prisma/prisma.service";
 // biome-ignore lint/style/useImportType: required for NestJS DI
 import { SupabaseService } from "@/supabase/supabase.service";
 import type { CreateUser } from "./dto/create-user.dto";
+import type { ResetUserPassword } from "./dto/reset-password.dto";
 import type { UpdateUser } from "./dto/update-user.dto";
 
 type RequestingUser = { sub: string; role: Role };
@@ -159,6 +160,38 @@ export class UsersService {
 		}
 
 		return this.prisma.user.update({ where: { id }, data: prismaData });
+	}
+
+	async resetPassword(
+		id: string,
+		dto: ResetUserPassword,
+		requestingUser: RequestingUser,
+	): Promise<{ ok: true }> {
+		if (requestingUser.role !== "OWNER") {
+			throw new ForbiddenException("No tienes permiso para esta acción");
+		}
+		if (requestingUser.sub === id) {
+			throw new ForbiddenException(
+				"El OWNER no puede resetear su propia contraseña por esta vía. Usa el flujo de recuperación.",
+			);
+		}
+
+		const user = await this.prisma.user.findUnique({ where: { id } });
+		if (!user) throw new NotFoundException("Usuario no encontrado");
+
+		try {
+			const { error } = await this.supabase.admin.auth.admin.updateUserById(id, {
+				password: dto.password,
+			});
+			if (error) {
+				throw new InternalServerErrorException("Error reseteando contraseña");
+			}
+		} catch (err) {
+			if (err instanceof InternalServerErrorException) throw err;
+			throw new InternalServerErrorException("Error reseteando contraseña");
+		}
+
+		return { ok: true };
 	}
 
 	async remove(id: string) {

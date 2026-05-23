@@ -1,8 +1,8 @@
-import { Logger } from "@nestjs/common";
+import { Logger, UnprocessableEntityException } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
-import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
+import { cleanupOpenApiDoc, createZodValidationPipe } from "nestjs-zod";
 import { env } from "@/config/env";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
@@ -27,6 +27,9 @@ async function bootstrap() {
 		allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
 	});
 
+	const ZodValidationPipe = createZodValidationPipe({
+		createValidationException: (error) => new UnprocessableEntityException(error),
+	});
 	app.useGlobalPipes(new ZodValidationPipe());
 
 	app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
