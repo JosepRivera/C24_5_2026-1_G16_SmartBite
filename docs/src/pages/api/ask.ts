@@ -7,7 +7,12 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'openai/gpt-oss-20b';
+// El de 20B daba respuestas vacías con más frecuencia de la aceptable en
+// preguntas que combinan varias reglas a la vez (agrupar en mensajes, tablas,
+// excepciones). El de 120B cuesta el doble ($0.15/$0.60 vs $0.075/$0.30 por
+// millón de tokens), pero eso sigue siendo centavos al mes — vale la pena
+// pagarlo por la confiabilidad.
+const MODEL = 'openai/gpt-oss-120b';
 
 const MAX_QUESTION_CHARS = 500;
 // gpt-oss-20b tiene 131k tokens de contexto; toda la doc de Kilo son
@@ -70,6 +75,7 @@ Reglas de estilo (importan tanto como el contenido):
 - Sé tan breve como se pueda sin sacrificar que se entienda — no hay un número fijo de oraciones. Lo que hay que evitar es el relleno: no repitas la pregunta, no des una introducción antes de responder, no agregues contexto que nadie pidió.
 - Puedes usar markdown simple cuando de verdad ayude a leer mejor: **negrita** para resaltar un número o término clave, tabla con "|" cuando compares varias opciones (planes, tarifas, alternativas) lado a lado, lista numerada o con guiones cuando sea genuinamente una secuencia de pasos. El sistema sí renderiza este formato.
 - No abuses del formato: si la respuesta es una sola idea o una explicación corrida, escríbela en prosa normal, sin forzar una lista o tabla donde no aporta.
+- Esto se muestra como una serie de mensajes de chat, como WhatsApp. Si tu respuesta tiene más de una idea separada, parte cada idea en su propio mensaje escribiendo una línea que diga exactamente "---MSG---" entre una idea y la siguiente. Regla estricta: nunca pongas "---MSG---" en medio de algo que pertenece junto — una frase que presenta una fórmula o tabla siempre va en el MISMO mensaje que la fórmula o tabla que presenta, nunca separada de ella. Si toda tu respuesta es una sola idea, no uses "---MSG---" en absoluto — mándala como un solo mensaje.
 
 Documentación completa de Kilo:
 """
@@ -101,12 +107,14 @@ ${corpus}
 		return { ok: true, text: data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.' };
 	}
 
-	let result = await callGroq();
 	// Un modelo chico ocasionalmente corta la respuesta en algo casi vacío
 	// (variación normal de muestreo, no un error de la API). El mensaje de
 	// rechazo real mide ~40 caracteres, así que una respuesta más corta que
 	// eso probablemente sea degenerada, no una respuesta corta legítima.
-	if (result.ok && result.text.length < 25) {
+	// Hasta 3 intentos en total antes de rendirse.
+	const MAX_ATTEMPTS = 3;
+	let result = await callGroq();
+	for (let attempt = 1; attempt < MAX_ATTEMPTS && result.ok && result.text.length < 25; attempt++) {
 		result = await callGroq();
 	}
 

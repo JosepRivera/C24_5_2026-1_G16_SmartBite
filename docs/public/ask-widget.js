@@ -24,15 +24,25 @@
 			.replace(/&lt;br\s*\/?&gt;/gi, '<br>'); // <br> dentro de una celda de tabla: la única etiqueta HTML que se deja pasar, sin atributos, no es un riesgo
 	}
 
-	// Devuelve un arreglo de bloques HTML (uno por párrafo/lista/tabla/encabezado
-	// del markdown), no un solo string unido — así cada bloque puede ir en su
-	// propia burbuja de chat, como mensajes seguidos de WhatsApp.
-	function renderMarkdownBlocks(markdown) {
+	// Convierte UN mensaje (puede tener varios párrafos/listas/tablas que van
+	// juntos) a un solo HTML — todo el contenido de un mensaje va en una sola
+	// burbuja. Dónde termina un mensaje y empieza el siguiente lo decide el
+	// propio modelo (separador "---MSG---"), no una regla mecánica por bloque:
+	// eso es lo único que sabe si una fórmula y su frase de presentación van
+	// juntas o no.
+	function renderMarkdownChunk(markdown) {
 		const blocks = markdown.trim().split(/\n{2,}/);
 		return blocks
 			.map((block) => {
 				const lines = block.split('\n').filter((l) => l.trim() !== '');
 				if (lines.length === 0) return '';
+
+				// Bloque de código ```...``` — se detecta antes que nada más,
+				// porque las comillas invertidas dentro rompen el resto de reglas.
+				if (lines.length >= 2 && lines[0].trim().startsWith('```') && lines[lines.length - 1].trim() === '```') {
+					const code = lines.slice(1, -1).map(escapeHtml).join('\n');
+					return `<pre><code>${code}</code></pre>`;
+				}
 
 				// Tabla: línea con "|" seguida de una fila separadora "|---|---|".
 				if (lines.length >= 2 && lines[0].includes('|') && /^\s*\|?\s*:?-{2,}/.test(lines[1])) {
@@ -67,7 +77,8 @@
 				// Párrafo normal.
 				return `<p>${lines.map(inline).join('<br>')}</p>`;
 			})
-			.filter((html) => html !== '');
+			.filter((html) => html !== '')
+			.join('');
 	}
 
 	const SUGGESTIONS = [
@@ -178,18 +189,22 @@
 			return bubble;
 		}
 
-		// Una respuesta larga se parte en varias burbujas seguidas (una por
-		// párrafo/lista/tabla), como mensajes de WhatsApp, en vez de un solo
-		// bloque de texto denso.
+		// El modelo decide dónde termina un mensaje y empieza el siguiente
+		// (separador literal "---MSG---"), no una regla mecánica por párrafo —
+		// así una fórmula y la frase que la presenta se quedan en la misma
+		// burbuja, y solo se parte donde de verdad cambia la idea.
 		async function addAssistantBlocks(markdown) {
-			const blocks = renderMarkdownBlocks(markdown);
-			for (const html of blocks) {
+			const chunks = markdown
+				.split(/\n*---MSG---\n*/)
+				.map((c) => c.trim())
+				.filter((c) => c !== '');
+			for (const chunk of chunks) {
 				const bubble = document.createElement('div');
 				bubble.className = 'kilo-ask-bubble kilo-ask-bubble--assistant';
-				bubble.innerHTML = html;
+				bubble.innerHTML = renderMarkdownChunk(chunk);
 				messagesEl.append(bubble);
 				messagesEl.scrollTop = messagesEl.scrollHeight;
-				if (blocks.length > 1) await new Promise((r) => setTimeout(r, 220));
+				if (chunks.length > 1) await new Promise((r) => setTimeout(r, 220));
 			}
 		}
 
