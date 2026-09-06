@@ -1,0 +1,73 @@
+---
+title: Visión general
+description: El problema que resuelve Kilo, el cliente objetivo, la solución y por qué el enfoque elegido es distinto al de la competencia existente.
+---
+
+import { Badge, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## El problema
+
+En Lima, la gran mayoría de dueños de restaurantes pequeños y medianos compran sus insumos **"a ojo"**: sin registro histórico de consumo, sin proyección de demanda, guiándose por intuición y experiencia acumulada. Esto produce dos fallas simétricas y costosas:
+
+- **Sobra insumo** → se vence o se desperdicia.
+- **Falta insumo** → *stockout* de un plato del menú, venta perdida y, en el peor caso, cliente insatisfecho que no vuelve.
+
+Ninguna de las dos fallas es visible en el momento en que ocurre: el dueño solo nota el patrón (si lo nota) al final del mes, cuando ya es tarde para corregir esa compra. La pérdida estimada ronda **5-12% del gasto mensual en insumos**. Es un **supuesto de trabajo sin fuente rigurosa para Lima**, no un hecho confirmado: ver [Preguntas frecuentes](/producto/preguntas-frecuentes/) para de dónde sale realmente ese número y por qué hay que validarlo con datos del piloto. <Badge text="Por validar en piloto" variant="caution" />
+
+## El cliente
+
+Kilo tiene **un solo tipo de actor real**: el dueño del restaurante (o quien administra la operación diaria). Compra el producto y es quien recibe el beneficio directo (menos desperdicio, más ahorro, mejores compras). No existe un mercado de dos lados que conectar (por ejemplo, no se conecta a compradores con proveedores) — esto simplifica el modelo de negocio y el producto: no hay que resolver *matching*, liquidez de oferta/demanda, ni incentivos cruzados entre dos tipos de usuario.
+
+### Perfil del cliente
+
+<CardGrid>
+  <Card title="Jobs (tareas)">
+    Decidir cuánto y qué comprar en el mercado o con el proveedor, sin sobrecomprar ni quedarse corto, sin llevar hojas de cálculo ni sistemas complejos.
+  </Card>
+  <Card title="Frustraciones">
+    Ver insumos que se vencen y hay que botar. Quedarse sin un ingrediente crítico un viernes por la noche. No tener certeza de cuánto realmente se pierde al mes por esto.
+  </Card>
+  <Card title="Alegrías (gains)">
+    Ver un número concreto de cuánto se ahorró este mes frente al anterior. Comprar con confianza, no con miedo. No depender de llevar cuentas manuales.
+  </Card>
+</CardGrid>
+
+## La solución (resumen)
+
+Kilo es una **app construida en Flutter** (Android, iOS, y también Web desde el mismo código base — ver [Multi-sucursal](/producto/multi-sucursal/) para el detalle de plataforma) que:
+
+1. Registra el consumo diario de insumos por voz, sin fricción de digitar formularios.
+2. Alimenta un **motor de predicción de demanda** (Holt-Winters, un método estadístico de pronóstico — ver [Fase 3 — Predicción nocturna](/producto/flujo/fase-3-prediccion/)) que aprende el patrón semanal real de cada restaurante.
+3. Genera un **recomendador de compras**: cuánto comprar antes de la siguiente visita al mercado, insumo por insumo.
+4. Alerta sobre vencimiento por lote y muestra el ahorro logrado mes a mes.
+
+## Por qué esto y no la competencia
+
+| Producto | Qué hace | Limitación frente a Kilo |
+|---|---|---|
+| **PANCA / Aurant** | Alertan reactivamente sobre bajo stock | No predicen demanda futura, solo reaccionan cuando el stock ya está bajo |
+| **Fudo** | POS completo con módulo de inventario incluido desde el Plan Avanzado (US$35/mes) | Para que el inventario funcione hay que **registrar cada venta en su caja**; su sugerencia de compra usa un promedio diario plano, sin estacionalidad semanal |
+| **WISK** | Sí tiene estacionalidad real | Cuesta **US$249/mes por local** (US$399 el paquete comida + bebida, US$499-1,999 multi-local) **más US$750-9,500 de implementación** |
+
+### El diferenciador real no es el precio, es no tener que operar un POS
+
+Vale ser honestos: **Fudo no es caro**. Su Plan Avanzado cuesta **US$35/mes** y el Plan Pro **US$45/mes** (usuarios ilimitados incluidos, con módulos opcionales de US$2 a US$40 cada uno), y el Avanzado **ya incluye** control de inventario, notificaciones por falta de stock, control de mermas y desperdicios, control de vencimiento de gastos, base de datos de proveedores y conteo de inventario. Decir que "las herramientas regionales cobran mucho más" sería falso para el competidor más probable en Lima.
+
+La diferencia real es otra: **Fudo es un punto de venta (POS)**. Para que su inventario diga algo útil hay que registrar **cada venta** en su caja, todos los días. Ese es exactamente el trabajo que este segmento no hace y no quiere empezar a hacer. Kilo pide **~30 segundos de voz al cierre** y **nunca** pide registrar una venta: **sin POS, sin caja, sin registrar ventas**.
+
+Dos hechos concretos que sostienen la comparación:
+
+- La sugerencia de compra de Fudo usa un **promedio diario plano**, con la fórmula documentada `(Stock mínimo − Stock actual) + (7 × Consumo diario promedio)`. Ese promedio no distingue un viernes de un martes — no hay estacionalidad semanal. Kilo sí la aprende (ver [Fase 3 — Predicción nocturna](/producto/flujo/fase-3-prediccion/)).
+- **Fudo Perú solo acepta tarjetas de crédito y débito** como medio de pago (según su propia página de precios): no acepta Yape ni Plin. Kilo cobra por Yape por defecto (ver [Pagos y pricing](/producto/pagos-y-pricing/)).
+
+En el caso de WISK, el costo sí es una barrera dura para este segmento: no es un precio por usuario (el tier base incluye 5 usuarios) y la integración con POS es opcional, no obligatoria, pero **US$249/mes por local más una implementación de US$750-9,500** está fuera de alcance para un restaurante pequeño de Lima.
+
+Kilo llena el hueco que queda entre estas opciones: **restaurantes pequeños de Lima que no tienen POS (sistema de punto de venta / caja), no emiten factura formal (no tienen RUC — el Registro Único de Contribuyente, el número tributario de un negocio formal en Perú), y no van a empezar a registrar cada venta en una caja para ganar control de inventario.** POS y RUC no son requisitos técnicos — Kilo funciona igual sin ellos — son solo la señal de qué tan informal es el negocio objetivo. El diseño de Kilo (ver [Pagos y pricing](/producto/pagos-y-pricing/)) asume explícitamente ese contexto: sin POS, sin RUC obligatorio para pagar, y con un precio que se calcula sobre el ahorro real medido en vez de una tarifa plana contratada de antemano.
+
+Ver también: mecanismos de negocio evaluados y descartados en [Decisiones descartadas](/producto/descartado/).
+
+<LinkCard
+	title="Flujo operativo"
+	href="/producto/flujo/"
+	description="Las 4 fases del ciclo diario, del catálogo inicial a la recomendación de compra."
+/>

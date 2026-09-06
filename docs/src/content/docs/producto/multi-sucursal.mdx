@@ -1,0 +1,38 @@
+---
+title: Multi-sucursal
+description: Arquitectura de datos multi-sucursal desde el día uno, actor único (Dueño) con dispositivo compartido por sucursal, y plataforma mobile + web vía Flutter.
+---
+
+import { Aside, Badge } from '@astrojs/starlight/components';
+
+## Arquitectura multi-sucursal
+
+El modelo de datos es **`cuenta → sucursales → insumos/stock/predicción`** desde el día uno — es decir, el esquema está preparado para múltiples sucursales aunque el MVP solo exponga en la UI la gestión de **una sucursal por cuenta** inicialmente, con una opción de **"agregar otra sucursal"** que aparece cuando hace falta.
+
+Cada sucursal tiene sus insumos, stock, registros y predicción **completamente independientes** — nunca se mezclan entre sucursales de una misma cuenta.
+
+Durante el onboarding se pide el nombre de la primera sucursal, con la opción de agregar más adelante (diseñarlo así desde el inicio evita una migración costosa después — ver [Preguntas frecuentes](/producto/preguntas-frecuentes/)).
+
+## Actor único: el Dueño <Badge text="Decidido" variant="success" />
+
+Un dueño que administra 2-3 locales no puede estar físicamente presente cada noche en cada sucursal para hacer el cierre de voz. Kilo resuelve esto sin crear un segundo tipo de usuario: tiene **un solo actor real, el Dueño** (mismo modelo de cliente que en [Visión general](/producto/vision-general/)). El problema se resuelve **a nivel de dispositivo, no de identidad**: el dispositivo de trabajo compartido de cada sucursal se queda con la sesión del dueño ya autenticada. Quien esté físicamente presente y de turno esa noche usa ese dispositivo para hacer el cierre de voz — no inicia sesión con su propia cuenta, porque no existe una cuenta separada para el personal.
+
+No hay login separado, ni número de teléfono separado, ni flujo de OTP para el personal, ni sistema de permisos/roles que construir. Si un miembro del personal registra datos incorrectamente, eso es un asunto operativo/laboral normal que el dueño gestiona directamente — no algo que el software necesite rastrear o bloquear.
+
+## Modelo de dispositivo
+
+No se asume un teléfono personal por empleado. En Perú no existe un estatuto claro que obligue o prohíba que el empleador entregue un dispositivo para trabajo presencial en restaurantes (la ley de teletrabajo peruana solo cubre trabajo remoto) — es una zona gris de tipo BYOD/laboral que Kilo evita directamente.
+
+**Solución**: **un dispositivo de trabajo compartido por sucursal** (tablet, teléfono, o PC/laptop — ver [Plataforma](#plataforma) más abajo) usado por quien esté de turno, siempre bajo la sesión ya autenticada del dueño para esa sucursal — igual que cómo se despliegan sistemas POS como Fudo en restaurantes pequeños de Perú (una sola tablet/terminal compartida). Esto aplica solo a cuentas multi-sucursal: un restaurante de una sola sucursal no necesita ningún dispositivo nuevo, el teléfono personal del dueño ya alcanza.
+
+## Autenticación del dispositivo: un evento único, no un login recurrente
+
+Cuando se configura el dispositivo compartido de una sucursal nueva, el dueño lo autentica **una sola vez** con su propio **teléfono + OTP** (código de un solo uso — el mismo mecanismo de login de siempre, ver [Notificaciones y autenticación](/producto/notificaciones-y-autenticacion/)), para vincular ese dispositivo a su cuenta/sucursal. A partir de ahí, el dispositivo se queda logueado indefinidamente: no hay una sesión que se cierre y se vuelva a abrir cada noche, ni una identidad distinta por persona que use el dispositivo (¿por qué el costo de OTP no es un problema aquí? ver [Preguntas frecuentes](/producto/preguntas-frecuentes/)).
+
+## Plataforma
+
+El MVP se construye con **Flutter**, un solo código base que compila a **Android, iOS y Web**. Aunque un dispositivo dedicado (tablet/teléfono) sigue siendo la opción típica, el dispositivo de trabajo compartido de una sucursal puede realistamente ser también una **PC/laptop que ya existe en el local**, en vez de un dispositivo nuevo comprado específicamente para esto — por eso Kilo soporta también un build web, no solo mobile nativo.
+
+<Aside type="caution" title="Diferencia real entre mobile y web: notificaciones">
+La grabación de voz funciona bien en navegadores modernos (vía **Web Audio API**/**MediaRecorder**) — no hay limitación real ahí. Donde sí hay una diferencia real es en **push notifications**: son más limitadas en web (especialmente en Safari/iOS web). Por eso, en el build web específicamente, el **inbox de notificaciones in-app** (ver [Notificaciones y autenticación](/producto/notificaciones-y-autenticacion/)) pasa a ser el canal con más carga real, en vez de un simple respaldo del push.
+</Aside>

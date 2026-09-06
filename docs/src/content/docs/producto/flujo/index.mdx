@@ -1,0 +1,27 @@
+---
+title: Resumen
+description: Las 4 fases del ciclo diario de Kilo — onboarding, registro por voz, procesamiento nocturno y recomendación de compras — con ejemplos numéricos completos.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Este documento describe el ciclo operativo completo de Kilo, de principio a fin, usando un restaurante ficticio de ejemplo — **"Doña Rosa"**, comida criolla, ubicado en Lima — para ilustrar cada paso con números concretos.
+
+El ciclo tiene 4 fases, cada una en su propia página:
+
+<CardGrid>
+  <Card title="Fase 1 — Onboarding">
+    Catálogo pre-cargado, unidad de medida, datos declarados y clasificación crítico/secundario de insumos.
+  </Card>
+  <Card title="Fase 2 — Registro diario por voz">
+    Cierre diario de stock remanente por voz, manejo de huecos, y registro de compra (Fase 2b).
+  </Card>
+  <Card title="Fase 3 — Predicción nocturna">
+    Holt-Winters y el sistema de 3 capas de arranque en frío, con ejemplos completos.
+  </Card>
+  <Card title="Fase 4 — Recomendador de compras">
+    Cuánto comprar, alertas de vencimiento por lote (FIFO) y el ahorro visible mes a mes.
+  </Card>
+</CardGrid>
+
+Empieza por [Fase 1 — Onboarding](/producto/flujo/fase-1-onboarding/).

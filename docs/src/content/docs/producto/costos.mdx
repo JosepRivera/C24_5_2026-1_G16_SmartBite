@@ -1,0 +1,168 @@
+---
+title: Costos y economía
+description: Cuánto cuesta operar Kilo de verdad, con precios verificados 2026, y a partir de cuántos restaurantes se cubre todo.
+---
+
+import { Aside, Badge, Steps } from '@astrojs/starlight/components';
+
+Esta página es una referencia de costos, no un plan financiero. Todas las cifras están en **dólares y soles**, convertidas al tipo de cambio **S/3.36 = USD 1** (BCRP, Banco Central de Reserva del Perú — 3 de septiembre de 2026).
+
+## Costo fijo mensual
+
+Este bloque **no depende de cuántos restaurantes haya**: es lo que cuesta tener Kilo prendido, con cero clientes o con doscientos.
+
+| Concepto | Piloto (5) | 50 | 200 |
+|---|---|---|---|
+| Render: servicio web Starter | $7 | $7 | $25 (Standard) |
+| Render: Postgres Basic-256mb | $6 | $6 | ~$19 (Basic-1gb) |
+| Render: Cron Job (mínimo) | $1 | $1 | $1 |
+| Ancho de banda | $0 | $0 | $0.15 |
+| Almacenamiento de audio (Cloudflare R2) | $0 | $0 | $0 |
+| Sentry / uptime (capa gratis) | $0 | $0 | $0 |
+| Firebase Authentication (capa de identidad) | $0 | $0 | $0 |
+| CI (integración continua — builds de iOS en Mac local) | $0 | $0 | $12 |
+| **Subtotal infraestructura** | **$14** | **$14** | **$57** |
+| Contador (S/300/mes) | $89 | $89 | $89 |
+| Anuales prorrateados (ver abajo) | $12.54 | $12.54 | $12.54 |
+| **TOTAL FIJO** | **$115 (S/387)** | **$115 (S/387)** | **$159 (S/534)** |
+
+**Firebase Authentication** aparece en cero y no es un truco contable: es gratis hasta **50,000 usuarios activos al mes** para login por correo, por teléfono, anónimo y social (Google Sign-In) por igual, y Kilo no se acerca ni de lejos a ese tope. Lo único facturado es el **SMS de verificación: US$0.10 (S/0.34) por mensaje a Perú**, con los primeros 10 de cada día sin cobro. Y se envía **una vez por dispositivo vinculado**, no cada mes: es un costo de alta por sucursal, no un costo recurrente (ver [Notificaciones y autenticación](/producto/notificaciones-y-autenticacion/)).
+
+<Aside type="caution" title="El contador es el 77% del costo fijo del piloto">
+Todo el stack de nube más toda la IA cuesta **menos de un sexto** de lo que cuesta el contador. Optimizar infraestructura no mueve la aguja: bajar los $14 de Render a $7 ahorra menos que un almuerzo. El costo real de operar Kilo es **administrativo**, no técnico — y ahí es donde hay que buscar si algún día hace falta recortar.
+</Aside>
+
+### Costos anuales y únicos, prorrateados a mensual
+
+| Concepto | Costo publicado | Prorrateo mensual |
+|---|---|---|
+| Apple Developer Program | $99/año | $8.25 |
+| Google Play (pago único) | $25 ÷ 36 meses | $0.69 |
+| Dominio .pe | S/110/año | $2.73 |
+| Dominio .com | $10.46/año | $0.87 |
+| **Total** | | **$12.54 (S/42)** |
+
+## Costo marginal por restaurante por mes
+
+Lo que cuesta agregar **un restaurante más**, asumiendo 30 cierres de voz al mes (uno por día).
+
+| Componente | Cálculo | USD | PEN |
+|---|---|---|---|
+| Groq Whisper Large v3 Turbo | 30 grabaciones × 45 s × $0.04/hora de audio | $0.015 | S/0.05 |
+| Claude Haiku — extracción de campos | 30 × $0.0045 (≈2,500 tokens entrada / 400 salida) | $0.135 | S/0.45 |
+| Claude Haiku — ajuste diario | 30 × $0.00155 | $0.047 | S/0.16 |
+| Almacenamiento de audio | dentro de la capa gratis de R2 | $0 | S/0 |
+| SMS de OTP (código de un solo uso), prorrateado | 2 envíos × $0.10 (Firebase Auth) ÷ 24 meses | $0.008 | S/0.03 |
+| **Subtotal sin comisión de pago** | | **$0.205** | **S/0.69** |
+
+### La comisión de pago
+
+Esta es la línea que decide la economía del producto, no la IA.
+
+| Precio del cobro | Comisión Culqi | Costo marginal total |
+|---|---|---|
+| S/35 con tarjeta | S/1.88 (5.36% efectivo) | **S/2.57** |
+| S/50 con tarjeta | S/2.39 (4.78%) | **S/3.08** |
+| S/89 con tarjeta | S/3.73 (4.20%) | **S/4.42** |
+| S/50 **con Yape** | S/1.72 (3.44%) | **S/2.41** |
+
+Culqi cobra **3.44% + US$0.20 fijo** por tarjeta, pero **3.44% plano** por Yape. Ese fee fijo de $0.20 (S/0.67) es el problema: representa **1.92%** de un cobro de S/35 y solo **0.76%** de uno de S/89. Los cobros chicos se castigan doble — pagan el mismo porcentaje y además diluyen peor el fijo.
+
+Dos conclusiones directas:
+
+- **La comisión de pago cuesta de 3 a 5 veces más que todo el pipeline de IA junto.** El subtotal de IA es S/0.66; la comisión sola va de S/1.72 a S/3.73.
+- **Yape es 28% más barato que tarjeta en un cobro de S/50** (S/1.72 contra S/2.39). Por eso Yape conviene como **método por defecto**, no como respaldo — invierte la jerarquía que se asumía en [Pagos y pricing](/producto/pagos-y-pricing/).
+
+<Aside type="note" title="Las comisiones de Culqi son inafectas a IGV">
+Confirmado en la propia página de precios de Culqi: sus comisiones son **inafectas a IGV**, así que el 3.44% es el costo completo, no 3.44% más impuesto. Por Yape la comisión es **3.44% plano, sin cargo fijo**; el fijo de US$0.20 aplica solo a tarjeta. Culqi tampoco cobra costo mensual ni de mantenimiento, y deja las tarifas **"sujetas a evaluación"** según el volumen de ventas.
+</Aside>
+
+## IGV 18% <Badge text="Por confirmar" variant="danger" />
+
+El **IGV** (Impuesto General a las Ventas, el impuesto al consumo peruano) es lo más importante de esta página. Kilo, como proveedor **domiciliado en Perú** vendiendo a empresas peruanas bajo **RER** o **RMT** (ver [Régimen tributario](#régimen-tributario)), **debe cobrar IGV del 18%**.
+
+La diferencia entre publicar un precio "con IGV incluido" o "+ IGV" vale **15.25% de todos los ingresos** (porque 1 − 1/1.18 = 15.25%):
+
+| Precio publicado | Si es IGV incluido (te queda) | Si es "+ IGV" (te queda) |
+|---|---|---|
+| S/35 | S/29.66 | S/35.00 (el cliente paga S/41.30) |
+| S/60 | S/50.85 | S/60.00 (paga S/70.80) |
+| S/89 | S/75.42 | S/89.00 (paga S/105.02) |
+
+En B2B (venta entre empresas), cotizar **"+ IGV" es normal y defendible**: un cliente **con RUC** (Registro Único de Contribuyentes) recupera ese IGV como **crédito fiscal**, así que no le cuesta nada real — lo descuenta del IGV que él mismo cobra. Pero hay que **decirlo explícitamente en la página de precios**. Si no se dice nada, la convención peruana lo lee como precio con IGV incluido, y se regala 15.25% de los ingresos en silencio.
+
+<Aside type="danger" title="Tensión real del modelo: el cliente informal es al que más le duele">
+El segmento que Kilo describe como objetivo incluye restaurantes **sin factura formal**. Un restaurante informal **sin RUC no puede recuperar el IGV** como crédito fiscal: ese 18% es un **sobrecosto real** para él. Para uno con RUC no cuesta nada.
+
+Es decir: **el cliente más informal es también al que más le duele el precio**, justo el que menos margen tiene para absorberlo. Esto es una tensión comercial del modelo, no un problema técnico — no se arregla con ingeniería y hay que decidirlo antes de publicar precios.
+</Aside>
+
+Dos advertencias sobre el alcance de esta sección:
+
+- Esto está **razonado desde el alcance de los regímenes tributarios**, no desde una resolución específica sobre SaaS doméstico. **Debe confirmarlo un contador o un abogado tributarista antes de publicar un precio.**
+- **No confundir con el D.Leg. 1623** (vigente desde el 1 de octubre de 2024), que grava servicios digitales de proveedores **no domiciliados**. Esa es la norma que subió ChatGPT Plus de $20 a $23.60 en Perú, y **no aplica a Kilo**, que es un proveedor domiciliado.
+
+## Régimen tributario
+
+| Régimen | Tope de ingresos | Tasa | ¿Puede emitir facturas? |
+|---|---|---|---|
+| Nuevo RUS (Régimen Único Simplificado) | S/5,000-8,000/mes | S/20 o S/50/mes fijo | **NO — solo boletas** |
+| **RER** (Régimen Especial de Renta) | S/525,000/año | **1.5%** del ingreso neto mensual, definitivo | Sí |
+| RMT (Régimen MYPE Tributario) | 1,700 UIT | 10% hasta 15 UIT de renta neta, 29.5% arriba | Sí |
+
+**El Nuevo RUS queda descartado**: no permite emitir facturas, y los clientes de Kilo (restaurantes con RUC) van a necesitar factura para su crédito fiscal y para deducir el gasto. Un proveedor que solo emite boletas es un proveedor que le cuesta más caro al cliente formal.
+
+Kilo debe arrancar en **RER**: 1.5% plano sobre el ingreso neto mensual, definitivo, sin declaración anual. El tope de S/525,000/año equivale a unos **490 restaurantes pagando S/89/mes** — muy por encima de cualquier escenario del MVP. La migración a **RMT** recién se plantea al superar ese tope.
+
+Obtener el **RUC** en **SUNAT** (Superintendencia Nacional de Aduanas y de Administración Tributaria) es **gratuito**. La **UIT** (Unidad Impositiva Tributaria, la unidad de referencia que usa SUNAT) **2026 = S/5,500**.
+
+## Punto de equilibrio
+
+| Precio mensual | Restaurantes necesarios (precio con IGV incluido) | Restaurantes necesarios (precio "+ IGV") |
+|---|---|---|
+| S/35 | 15 | 12 |
+| S/60 | 9 | 7 |
+| S/89 | 6 | 5 |
+
+La aritmética, para que sea reproducible — caso **S/35 con IGV incluido**:
+
+<Steps>
+1. Ingreso neto por restaurante: S/35 ÷ 1.18 = **S/29.66**
+2. Menos costo marginal (tarjeta a S/35): S/29.66 − S/2.57 = **S/27.09** de contribución
+3. Costo fijo mensual del piloto: S/387 ÷ S/27.09 = 14.3 → **15 restaurantes**
+</Steps>
+
+Lo interesante es que **el punto de equilibrio casi no se mueve al escalar**: el costo fijo está dominado por el contador (S/300), que no crece con la cantidad de restaurantes. Pasar de 5 a 50 restaurantes no cambia el costo fijo en absoluto; llegar a 200 lo sube solo de S/387 a S/534.
+
+## Costos que no son caja: el trabajo del equipo
+
+Nada de lo siguiente aparece en las tablas de arriba, y sumado **pesa más que todas las líneas de efectivo juntas**. Es *sweat equity* (trabajo aportado sin pago) y costo de oportunidad:
+
+- **Todo el desarrollo**: backend Bun/Elysia más Flutter en tres plataformas (Android, iOS, Web).
+- **La carga del catálogo por restaurante** — el verdadero cuello de botella para escalar. A 2 horas por restaurante, **200 restaurantes son 400 horas** que ninguna línea de costo captura.
+- **La prueba cerrada obligatoria de Google Play**: 14 días de demora, sin costo en efectivo.
+- **Los ciclos de revisión de App Store**: 1 a 7 días cada uno, y se repiten con cada rechazo.
+- **El registro y las declaraciones mensuales en SUNAT.**
+- **El soporte al cliente**: en español, por WhatsApp, en horario de restaurante (noches y fines de semana).
+- **Una Mac**, si nadie del equipo tiene una: $600-1,200 de capex (inversión de capital) solo para poder firmar builds de iOS.
+
+## Riesgos de costo
+
+Los tres que realmente importan, en orden de impacto:
+
+1. **La interpretación del IGV en el precio publicado.** Vale 15.25% de los ingresos — más que todo el hosting y toda la IA juntos, a cualquier escala. Ninguna optimización de infraestructura lo recupera. Es una decisión de una sola línea en la página de precios.
+
+2. **La comisión de pago en cobros chicos.** A S/35, la tarjeta cobra **5.36% efectivo** — y ese porcentaje es el costo completo, porque la comisión no lleva IGV encima. Mitigaciones: usar **Yape por defecto** (3.44% plano, sin fee fijo) y ofrecer **cobro trimestral o anual** para amortizar el fee fijo en una sola transacción en vez de tres o doce.
+
+3. **El tamaño del prompt del catálogo.** <Badge text="Por validar en piloto" variant="caution" /> El costo de Claude Haiku se calculó asumiendo **~1,500 tokens de catálogo** en el contexto. Un restaurante con 200 insumos podría empujar el prompt sobre **8,000 tokens** y llevar la extracción de $0.0045 a **~$0.012 por llamada (2.7×)**. Hay que **medir los tokens reales con `messages.count_tokens` sobre tres catálogos de verdad antes de fijar el precio.**
+
+## Nota de método
+
+Quedan **dos confirmaciones externas pendientes** antes de lanzar:
+
+| Pendiente | Por qué importa |
+|---|---|
+| Tratamiento del IGV y del régimen, confirmado por un contador | Vale **15.25% del ingreso**; acá está razonado desde el alcance de los regímenes, no desde una resolución sobre SaaS doméstico |
+| Conteos reales de tokens del catálogo, medidos con `messages.count_tokens` sobre tres catálogos de verdad | Ver riesgo 3 arriba: puede multiplicar por 2.7 el costo de extracción |
+
+Dos cifras más se apoyan en fuentes secundarias, pero no bloquean nada: el precio de **Render Postgres Basic-1gb** (~$19-20) y el costo de **constituir una SAC** (notaría más SUNARP, comúnmente entre **S/400 y S/1,000**).

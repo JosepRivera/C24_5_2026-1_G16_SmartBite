@@ -1,0 +1,54 @@
+---
+title: "Fase 4 — Recomendador de compras"
+description: Cuánto comprar antes de la siguiente visita al mercado, alertas de vencimiento por lote (FIFO) y el ahorro visible mes a mes.
+---
+
+import { Badge, LinkCard } from '@astrojs/starlight/components';
+
+Antes de la siguiente visita programada al mercado (usando el **intervalo de compra**, declarado por categoría en la [Fase 1](/producto/flujo/fase-1-onboarding/)), Kilo calcula, por insumo:
+
+```text title="Cantidad a comprar, por insumo"
+cantidad a comprar = demanda predicha + umbral mínimo − stock actual
+```
+
+- **Demanda predicha**: la proyección de Holt-Winters para los días que faltan hasta la próxima compra de esa categoría (el intervalo de compra se declara por categoría, no como un solo número global — ver [Fase 1](/producto/flujo/fase-1-onboarding/)).
+- **Umbral mínimo**: colchón de seguridad configurado para ese insumo.
+- **Stock actual**: el último dato de stock remanente registrado.
+
+## Alertas de vencimiento por lote (FIFO)
+
+Cada compra se registra como un **lote separado** (fecha + cantidad + costo), de forma invisible para el dueño — nunca se le pregunta qué lote está usando en la cocina. Internamente, el sistema **asume FIFO** (*first in, first out*: el lote más antiguo se consume primero) como la convención más segura para calcular el riesgo de vencimiento (¿por qué es segura aunque la cocina no la siga al pie de la letra? ver [Preguntas frecuentes](/producto/preguntas-frecuentes/)).
+
+Por esto es necesario rastrear los lotes por separado: sin un orden de consumo asumido, el sistema no podría decir **cuál lote específico** está en riesgo.
+
+**Ejemplo:**
+
+- Lote A de pollo, comprado el lunes → vence el jueves.
+- Lote B de pollo, comprado el jueves → vence el domingo.
+
+Una alerta consciente de lotes dice: *"El lote de pollo del lunes vence mañana"* — en vez de una advertencia genérica a nivel de insumo que no distingue cuál lote es el urgente.
+
+## Ahorro visible <Badge text="Por validar en piloto" variant="caution" />
+
+Kilo muestra una **comparación mes contra mes del valor de insumo vencido, para el mismo restaurante** — nunca contra una línea base hipotética de "si no usaras la app". Ejemplo:
+
+- **Mes 1** (predicciones sin refinar, arranque en frío reciente): **S/380** perdidos en insumo vencido.
+- **Mes 4** (predicciones ya refinadas con datos reales acumulados): **S/200** perdidos.
+
+Esto se muestra al dueño como:
+
+> "Este mes perdiste S/200, S/180 menos que tu primer mes."
+
+**Por qué este ejemplo y no uno más ambicioso.** S/380 → S/200 es una reducción de aproximadamente **47%** en tres meses. Es deliberadamente conservador: las cifras publicadas para software de inventario y pronóstico de demanda se agrupan en un rango de **20-50% de reducción de desperdicio**, y esas son afirmaciones de los propios proveedores, no resultados auditados de forma independiente. Un ejemplo de 75% de reducción quedaría fuera de todo lo que la industria reporta y sería lo primero que un lector escéptico atacaría — y como este número sostiene toda la narrativa de precio (ver [Pagos y pricing](/producto/pagos-y-pricing/)), tiene que aguantar ese ataque. Las cifras reales del piloto reemplazarán este ejemplo.
+
+El "ahorro" mostrado — y sobre el cual se calcula el precio (ver [Pagos y pricing](/producto/pagos-y-pricing/)) — es el **costo de compra de los insumos que ya no se desperdician**, no utilidad ni ingreso (más detalle en [Preguntas frecuentes](/producto/preguntas-frecuentes/)).
+
+<LinkCard
+	title="Pagos y pricing"
+	href="/producto/pagos-y-pricing/"
+	description="Cómo este ahorro medido se convierte en el precio del mes, con piso y techo."
+/>
+
+---
+
+Anterior: [Fase 3 — Predicción nocturna](/producto/flujo/fase-3-prediccion/)

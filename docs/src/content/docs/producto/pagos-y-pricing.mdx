@@ -1,0 +1,170 @@
+---
+title: Pagos y pricing
+description: Modelo de negocio, la fórmula de precio con piso y techo, anti-gaming, política de fin de piloto, referidos y la infraestructura de pago disponible en Perú en 2026.
+---
+
+import { Aside, Badge, LinkCard } from '@astrojs/starlight/components';
+
+## Modelo de negocio
+
+Piloto gratuito de **2-3 meses** con **3-5 restaurantes reales**, seguido de una **conversión a pago obligatoria**.
+
+### Mecanismo de precio: una sola fórmula, con piso y techo
+
+<Aside type="danger" title="Decidido">
+El precio que se cobra **no es un monto fijo por tier** — no existen tiers. Es una **sola fórmula** aplicada al ahorro real medido ese mes para ese restaurante específico (ver [Ahorro visible](/producto/flujo/fase-4-recomendador/)):
+
+```text title="Fórmula de precio"
+precio del mes = 15% del ahorro medido ese mes
+  piso:  S/35 + IGV
+  techo: S/89 + IGV
+```
+
+Dos restaurantes del mismo tamaño pueden pagar montos distintos si Kilo les genera ahorros distintos. El precio varía mes a mes junto con el ahorro medido; no es una tarifa plana contratada de antemano.
+</Aside>
+
+**Por qué el piso y por qué el techo:**
+
+- El **piso de S/35 + IGV** garantiza que Kilo nunca cobre por debajo de lo que le cuesta operar a ese restaurante. Cobrando "+ IGV", el punto de equilibrio se alcanza alrededor de los **12 restaurantes** (ver el modelo completo en [Costos](/producto/costos/)).
+- El **techo de S/89 + IGV** le da previsibilidad al dueño: sabe que su factura nunca se dispara aunque tenga un mes excepcionalmente bueno, y garantiza que **siempre se queda con la mayor parte de su propio ahorro**.
+
+#### Ejemplo trabajado
+
+Un restaurante que gasta **S/10,000/mes en insumos** con **8% de merma** pierde **S/800/mes**. Si Kilo le reduce esa merma un **40%**, ahorra **S/320**. El 15% de S/320 es **S/48**, que cae entre el piso y el techo → **paga S/48 + IGV**.
+
+| Situación | Ahorro medido | 15% del ahorro | Precio facturado |
+|---|---|---|---|
+| Restaurante chico | S/128 | S/19.20 | **S/35 + IGV** (aplica el piso) |
+| Restaurante típico | S/320 | S/48 | **S/48 + IGV** (la fórmula directa) |
+| Restaurante grande | S/640 | S/96 | **S/89 + IGV** (aplica el techo) |
+
+En los tres casos el dueño se queda con la mayor parte de lo ahorrado, y en el caso grande el techo le regala margen extra: paga S/89 sobre un ahorro de S/640, menos del 14%.
+
+<Aside type="caution" title="Todos los precios son + IGV">
+Los precios de Kilo se comunican **siempre como "+ IGV"**, nunca con el impuesto incluido. El IGV es 18% y **hay que cobrarlo**: anunciar un precio con IGV adentro equivale a regalar **15.25% del ingreso** (ver el desglose en [Costos](/producto/costos/)). Un cliente **con RUC recupera ese IGV como crédito fiscal**, así que para él no representa ningún costo real.
+</Aside>
+
+#### Sobre qué costos se apoya el piso
+
+- **Costo de IA: ~US$0.195/restaurante/mes ≈ S/0.66.** Sale de los precios vigentes de Groq Whisper Large v3 Turbo (US$0.04 por hora de audio) y Claude Haiku 4.5 (US$1/MTok de entrada, US$5/MTok de salida). Vale decirlo explícitamente: **el costo de IA es despreciable** frente a todo lo demás, y no es donde hay que optimizar.
+- **Comisión de pago:** el mayor costo variable por transacción, muy por encima del costo de IA (ver la sección del riel de cobro más abajo).
+- **Hosting y costos fijos:** dependen de la escala, no del restaurante individual.
+
+Cualquier cifra de costo por restaurante depende de a qué escala se calcule. El desglose modelado a **5, 50 y 200 restaurantes** — incluido el punto de equilibrio de ~12 restaurantes que sostiene el piso de S/35 + IGV — está en [Costos](/producto/costos/). El piloto de Kilo es de **3-5 restaurantes**; cualquier número calculado a otra escala se indica explícitamente como tal.
+
+### Cómo y cuándo se cobra: un cargo único mensual vía Culqi
+
+El cobro **siempre ocurre en atraso (in arrears)**, nunca por adelantado: recién cuando un mes cierra y existe la cifra real de ahorro medido, se calcula el % y se factura — no existe todavía el número sobre el cual cobrar antes de eso. El "ahorro" es el costo de compra de insumo que ya no se pierde, no utilidad ni ingreso (detalle completo en [Preguntas frecuentes](/producto/preguntas-frecuentes/)).
+
+Como el monto cambia cada mes, no encaja una suscripción tradicional de monto fijo recurrente — para **ninguno** de los dos métodos de pago. En su lugar, cada mes Kilo genera un **cargo único (one-off) nuevo** por el monto específico de ese mes, vía la API de Culqi.
+
+### El riel de cobro: tres opciones, una elegida <Badge text="Decidido" variant="success" />
+
+Se evaluaron tres formas de cobrarle al restaurante. Las tres mueven plata; solo una se activa sola.
+
+| Opción | Comisión | ¿Confirma cada cargo por API? | Veredicto |
+|---|---|---|---|
+| Yape personal + activación manual | sin comisión | No — no existe API | Descartada |
+| Yape Empresa | **2.95%** sobre lo cobrado por QR o número (Yape POS: 3.45% + IGV) | No — reporta ventas del día, no cargos por cliente | Descartada |
+| **Culqi** | **3.44% por Yape, inafecta a IGV, sin costo mensual** | **Sí — producto "Cargos Únicos"** | **Elegida** |
+
+**Yape personal** se descartó por tres razones concretas: (i) al no haber API, alguien tendría que mirar un teléfono y marcar a mano cada cuenta como pagada, lo que rompe el "repetible", una de las tres pruebas que un modelo de negocio tiene que pasar; (ii) una cuenta Yape personal tiene un tope legal de recepción de **5 UIT al mes** — con la UIT 2026 en S/5,500, son **S/27,500 al mes**, o unos **309 restaurantes a S/89**, y ahí la cobranza simplemente deja de funcionar; (iii) la plata que entra a una cuenta personal es ingreso de una persona, no de la empresa, y eso es incompatible con emitir facturas.
+
+**Yape Empresa** es más barato por transacción, pero es un producto de cobranza con QR y reporte de ventas del día, no una API de cargo por cliente con confirmación automática: seguiría exigiendo conciliación manual. Y el ahorro es chico: los 0.49 puntos porcentuales sobre un cobro de S/50 son **S/0.25 al mes por restaurante**, mucho menos de lo que cuesta construir y operar esa conciliación.
+
+Dicho al revés: los **0.49 puntos extra que se le pagan a Culqi son el precio de la automatización**, y la automatización es lo que hace repetible el modelo de negocio. Encima, la experiencia para el dueño es la misma que ya conoce — confirma en su propia app de Yape.
+
+Las comisiones de Culqi son **inafectas a IGV** según su propia página de precios, así que el 3.44% es el costo completo, no 3.44% más impuesto. Dentro de Culqi, el medio sí cambia el número:
+
+| Medio dentro de Culqi | Comisión | Costo efectivo sobre S/50 | Sobre S/35 |
+|---|---|---|---|
+| **Yape (por defecto)** | **3.44% plano**, sin cargo fijo | **3.44%** | 3.44% |
+| Tarjeta guardada (alternativa) | 3.44% + US$0.20 fijo | 4.78% | 5.36% |
+
+El cargo fijo de US$0.20 es lo que rompe la economía en tickets chicos: sobre un cobro de S/35 ese fijo por sí solo ya representa **1.92%** del monto. Por eso **Yape es el método por defecto y la tarjeta la alternativa**, no al revés. El dueño confirma el cargo con un código temporal en su propia app de Yape; con tarjeta, el cargo va contra el token guardado. Los dos caminos quedan confirmados por la API de Culqi, así que **no hay conciliación manual en ningún caso**.
+
+<Aside type="note" title="Dónde se optimiza de verdad">
+La comisión de pago cuesta **3 a 5 veces más que todo el pipeline de IA junto**. Optimizar prompts no mueve la aguja; elegir el riel de cobro sí. Ver el desglose completo en [Costos](/producto/costos/).
+</Aside>
+
+<Aside type="caution" title="Límite y ventana de confirmación del cargo único por Yape">
+El cargo único de Culqi sobre Yape tiene un tope de **~S/2,000 por cargo** y el código de confirmación tiene una vigencia de **2 minutos como máximo** (según la documentación de Culqi) — es una confirmación puntual en el momento, no un QR estático que queda esperando por días. Los precios de Kilo (S/35-89 + IGV al mes, ver arriba) están muy por debajo del tope, así que el límite no es una limitación práctica; la ventana de 2 minutos sí exige que el aviso le llegue al dueño en el momento en que puede confirmar, no antes ni después.
+</Aside>
+
+### Validación externa del precio <Badge text="Por validar en piloto" variant="caution" />
+
+La fórmula (15% del ahorro, con piso y techo) se contrastó contra dos fuentes:
+
+**(a) Precios reales de competidores, verificados en sus propias páginas:**
+
+| Competidor | Precio real |
+|---|---|
+| Fudo | **US$35/mes** (Plan Avanzado) — **US$45/mes** (Plan Pro), usuarios ilimitados, módulos opcionales de US$2-40 |
+| WISK | **US$249/mes** por local (US$399 paquete comida + bebida, US$499-1,999 multi-local) **+ US$750-9,500 de implementación** |
+| MarketMan | **US$199/mes** (Starter) — **US$249/mes** (Growth), Enterprise a medida, **+ US$500 de setup y contrato mínimo de 12 meses** |
+
+Dos lecturas honestas de esta tabla:
+
+1. **Kilo no puede posicionarse como "el más barato" frente a Fudo.** Fudo cuesta US$35/mes y su Plan Avanzado ya incluye control de inventario, alertas de falta de stock, control de mermas y desperdicios, control de vencimiento de gastos, base de datos de proveedores y conteo de inventario. El diferenciador real es que **Fudo es un POS: su inventario solo sirve si se registra cada venta en su caja**, mientras que Kilo pide ~30 segundos de voz al cierre y nunca pide registrar una venta (ver [Visión general](/producto/vision-general/)).
+2. **Frente a WISK y MarketMan la barrera sí es de costo, y es peor de lo que parece**: no es solo la mensualidad, son los **US$750-9,500 de implementación** de WISK y los **US$500 de setup más 12 meses de contrato mínimo** de MarketMan. Un restaurante pequeño de Lima no firma eso.
+
+**(b) Analogías reales de "gain-share" / precio basado en ahorro en distintas industrias:** el software de costo de alimentos para restaurantes específicamente captura un **7-16%** implícito del valor de ahorro realizado — el análogo más cercano a Kilo — lo cual deja al **15% del ahorro comprobado** dentro del rango defendible, cerca de su extremo alto, y compensado por el techo de S/89.
+
+<Aside type="note">
+Si el ahorro (y por lo tanto el %) se mide **por sucursal** o **sumado a nivel de toda la cuenta** para cuentas multi-sucursal está explícitamente **pendiente de definir**, sujeto a datos reales del piloto.
+</Aside>
+
+## Regla anti-gaming
+
+El ahorro se mide con datos registrados por el sistema, no auto-declarados. Un restaurante con **historial de registro real insuficiente** — por debajo de ~**60-70% de los últimos 30 días registrados como datos reales**, no estimados — no tiene un ahorro comprobable sobre el cual aplicar el 15%.
+
+<Aside type="danger" title="Sin datos suficientes se cobra el techo, no el piso">
+Cuando no hay historial real suficiente, **se cobra el techo (S/89 + IGV)**, nunca el piso.
+
+La dirección importa y es fácil equivocarla: si al no registrar se cayera al **piso**, no registrar sería la opción **barata** y el incentivo quedaría invertido al revés. Cobrando el techo, no registrar empuja el precio **hacia arriba**. El piso de S/35 es un premio por tener ahorro comprobado y chico; no es el default de quien no aporta datos.
+</Aside>
+
+**Interacción con el arranque en frío:** un restaurante en su primer mes no puede tener 30 días de historial, así que esta regla **solo aplica una vez superado el arranque en frío de 28 días** (ver [Fase 3 — Predicción nocturna](/producto/flujo/fase-3-prediccion/)). Antes de eso no hay nada que "gamear" todavía, y penalizar a un restaurante nuevo por no tener pasado sería absurdo.
+
+## Política de fin de piloto sin conversión
+
+Si el piloto termina sin que el restaurante se convierta a pago:
+
+- Se cortan las funcionalidades que generan valor nuevo: nuevos cierres de voz, nuevas predicciones, nuevas recomendaciones de compra.
+- El **acceso de solo lectura al historial ya acumulado permanece disponible indefinidamente y gratis** (costo marginal cercano a cero para Kilo, preserva la buena voluntad y la posibilidad de recuperar al cliente más adelante).
+
+Si el restaurante convierte a pago después de un vacío largo, se reutiliza el **mismo mecanismo de relleno de huecos y marcado como "estimado"** de la Fase 2 (ver [Fase 2 — Registro diario por voz](/producto/flujo/fase-2-registro-diario/)) para el vacío grande — no hace falta lógica especial de "reset".
+
+## Programa de referidos
+
+Recompensa doble: **1 mes gratis para quien refiere** y **1 mes gratis para el referido**, pero la recompensa para **ambos** solo se activa cuando la cuenta referida **se convierte en una suscripción de pago real** (no simplemente al registrarse) — así se evita crear cuentas desechables para "farmear" meses gratis.
+
+El crédito de mes gratis de quien refiere se aplica a **su propia siguiente factura real** (no durante su propio piloto, que ya es gratis). Un restaurante referido obtiene efectivamente **2-3 meses de piloto + 1 mes de referido = 3-4 meses totales** antes del primer pago real (¿por qué no acortar esta ventana? ver [Preguntas frecuentes](/producto/preguntas-frecuentes/)).
+
+## Mecanismo de pago (contexto Perú, 2026)
+
+Esta es infraestructura de pago local genuinamente sin resolver del todo — se documenta con honestidad:
+
+- **Stripe no soporta Perú como mercado** — queda excluido.
+- Ninguna pasarela peruana de autoservicio (Culqi, Izipay, Niubiz, Mercado Pago) tiene hoy un producto de **cobro recurrente automatizado verdadero sobre Yape/Plin específicamente**. Culqi acepta Yape solo como cargo único (*one-off*, "Cargos Únicos"), no dentro de su producto de Suscripciones (exclusivamente con tarjeta) — lo cual, convenientemente, es exactamente lo que Kilo necesita, ya que el monto nunca es fijo (ver arriba).
+- Existe un riel de **"Yape On File"** de cobro recurrente verdadero, muy nuevo (febrero 2026), vía PagoEfectivo/agregadores enterprise (ProntoPaga, dLocal) — pero sin onboarding maduro de autoservicio para comercios pequeños todavía. No se usa en el MVP; no haría falta de todos modos, dado que Kilo ya cobra por cargo único cada mes, no por suscripción recurrente de monto fijo.
+
+### La otra razón para Culqi: la barrera de entrada
+
+Además de la confirmación automática, Culqi tiene la **menor barrera de entrada**: registro solo con DNI (Documento Nacional de Identidad), sin necesitar RUC ni empresa formalmente registrada todavía, y acceso inmediato a sandbox (entorno de pruebas aislado del proveedor). Existen quejas reales de la comunidad de desarrolladores sobre sus herramientas anti-fraude y soporte (ver [Preguntas frecuentes](/producto/preguntas-frecuentes/) sobre por qué esto importa menos en el caso de Kilo).
+
+<Aside type="tip" title="Recomendación de arquitectura">
+Aislar la lógica del proveedor de pago detrás de una capa de abstracción interna en el código, para que migrar más adelante a **Mercado Pago** (mejor reputación anti-fraude, comisión ligeramente mayor) o **Rebill** (capa de abstracción de facturación por suscripción para LatAm, con soporte nativo de Yape/Perú) no requiera una reescritura.
+</Aside>
+
+El recordatorio de pago se entrega por **push notification + inbox in-app**, no por WhatsApp (ver [Notificaciones y autenticación](/producto/notificaciones-y-autenticacion/)).
+
+## Nota de seguridad / PCI
+
+Culqi tokeniza los datos de tarjeta, de modo que **nunca tocan los servidores propios de Kilo**, manteniendo la carga de cumplimiento **PCI** (PCI DSS, el estándar de seguridad de la industria de tarjetas de pago) de Kilo al mínimo.
+
+<LinkCard
+	title="Costos y economía"
+	href="/producto/costos/"
+	description="El desglose completo de costos, comisiones y punto de equilibrio que sostiene el piso de S/35 + IGV."
+/>

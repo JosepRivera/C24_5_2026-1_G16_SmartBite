@@ -1,0 +1,56 @@
+---
+title: Decisiones descartadas
+description: Todo lo que se evaluó y se descartó deliberadamente del alcance del MVP, en un solo lugar — para no inflar cada página individual con esto.
+---
+
+Esta página junta todo lo que Kilo evaluó y decidió **no** construir (por ahora), agrupado por el tema al que pertenece. Cada punto explica brevemente por qué se descartó y enlaza de vuelta a la página donde vive la decisión que sí se tomó.
+
+## Catálogo de insumos
+
+- **TPCA del INS/MINSA** (tabla de composición de alimentos) como fuente del catálogo — se evaluó, pero es una tabla pensada para composición nutricional, no para el lenguaje de compra real de un restaurante: no distingue variedades comerciales ni usa los nombres que un dueño realmente dice en voz alta — [ver contexto](/producto/flujo/fase-1-onboarding/).
+
+## Registro diario y manejo de huecos
+
+- **Promedio ponderado por cantidad** para el costo cuando hay dos compras del mismo insumo el mismo día a precios distintos — descartado; como cada compra ya se registra como su propio lote (fecha + cantidad + costo), dos compras del mismo día a precios distintos se tratan simplemente como dos lotes separados, el mismo mecanismo ya usado para compras en días distintos, sin caso especial ni pérdida de precisión — [ver contexto](/producto/flujo/fase-2-registro-diario/).
+- **Depender únicamente de un toggle diario manual** para cierres recurrentes (ej. "cerrado los domingos") — descartado como único mecanismo, por el riesgo real de que el dueño se olvide de marcarlo cada semana; se complementa con una regla de cierre recurrente configurable, que un registro de voz real siempre anula para una fecha puntual — [ver contexto](/producto/flujo/fase-2-registro-diario/).
+
+## Predicción y cold-start
+
+- **Mezclar datos reales de un restaurante con los de otro, o sustituir predicciones reales día a día con datos agregados de Capa 1** — nunca ocurre, ni siquiera cuando existe patrón agregado disponible para ese tipo de cocina; el dato agregado solo mejora la primera estimación a ciegas del día 0 — [ver contexto](/producto/flujo/fase-3-prediccion/).
+
+## Recomendador de compras
+
+- **Preguntarle al dueño qué lote está usando en la cocina** — el sistema asume FIFO internamente en vez de pedir ese dato, porque el total de soles perdidos al mes sigue siendo preciso sin importar el orden real de consumo — [ver contexto](/producto/flujo/fase-4-recomendador/).
+
+## Pagos y pricing
+
+- **Banda fija de precio por tier** — descartada por completo, junto con el mecanismo de asignar tier según el gasto en insumos. La razón concreta: **los números de la tabla de tiers no se derivaban de su propia fórmula**. La tabla decía cobrar "10-20% del ahorro", pero 10-20% de un ahorro de S/75-720 da S/7.50-144 (no los S/25-35 que listaba), y 10-20% de S/300-3360 da S/30-672 (no los S/69-89 que listaba). El modelo de negocio se contradecía a sí mismo dentro de una sola tabla. En su lugar hay **una sola fórmula**: *15% del ahorro medido ese mes, con piso de S/35 + IGV y techo de S/89 + IGV* — [ver contexto](/producto/pagos-y-pricing/).
+- **Rango de porcentaje variable (10-20%) sobre el ahorro** — descartado a favor de un **15% único y fijo**; un rango sin regla que dijera cuándo aplicar 10 y cuándo 20 no era un mecanismo, solo una ambigüedad. El piso y el techo, no el porcentaje, son ahora lo que acota la factura — [ver contexto](/producto/pagos-y-pricing/).
+- **Cobrar el piso cuando faltan datos reales suficientes** — descartado: caer al precio más bajo por no registrar invertiría el incentivo y volvería "no usar la app" la opción barata. La regla anti-gaming cobra el **techo (S/89 + IGV)** en ese caso — [ver contexto](/producto/pagos-y-pricing/).
+- **Tarjeta como medio de cobro por defecto** — descartada a favor de **Yape por defecto**: Culqi cobra 3.44% plano por Yape frente a 3.44% + US$0.20 fijo por tarjeta, lo que sobre un cargo de S/50 hace a Yape ~28% más barato. La tarjeta queda como alternativa para quien la prefiera — [ver contexto](/producto/pagos-y-pricing/).
+- **Yape personal con activación manual** — descartado por tres razones a la vez: no hay API (alguien tendría que marcar a mano cada cuenta como pagada), una cuenta personal tiene un tope legal de recepción de 5 UIT al mes (**S/27,500 con la UIT 2026**, unos 309 restaurantes a S/89), y esa plata entra como ingreso de una persona y no de la empresa, lo que impide facturar — [ver contexto](/producto/pagos-y-pricing/).
+- **Yape Empresa como riel de cobro** — más barato (**2.95%** frente al 3.44% de Culqi), pero es un producto de cobranza por QR con reporte de ventas del día, sin confirmación automática por cargo; el ahorro de **S/0.25 al mes por restaurante** no paga la conciliación manual que exigiría — [ver contexto](/producto/pagos-y-pricing/).
+- **Stripe** como pasarela de pago — no soporta Perú como mercado, queda excluido.
+- **"Yape On File"** (cobro recurrente verdadero vía PagoEfectivo/agregadores enterprise como ProntoPaga o dLocal) — sin onboarding maduro de autoservicio para comercios pequeños todavía; no se usa en el MVP, pero vale la pena monitorearlo como ruta de actualización futura — [ver contexto](/producto/pagos-y-pricing/).
+- **WhatsApp para el recordatorio de pago** — descartado de la estrategia de notificaciones del MVP; construir una integración completa de Meta Business API para un solo tipo de mensaje recordatorio no se justifica sin evidencia real de piloto — [ver contexto](/producto/pagos-y-pricing/).
+
+## Notificaciones
+
+- **SMS para notificaciones operativas generales** — se cobra por mensaje mientras el push cuesta S/0, así que el SMS queda reservado solo para la verificación de identidad, no para el uso diario — [ver contexto](/producto/notificaciones-y-autenticacion/).
+- **Twilio como proveedor de SMS** — US$0.2476 por mensaje a Perú frente a **US$0.10 (S/0.34)** de Firebase Auth por el mismo envío, con los primeros 10 del día sin cobro; se reemplazó por Firebase — [ver contexto](/producto/notificaciones-y-autenticacion/).
+- **OTP por WhatsApp** — exigía una cotización de un BSP (proveedor autorizado de la API de WhatsApp) que nunca se consiguió, y con el SMS de Firebase a S/0.34 el ahorro dejó de justificar la integración — [ver contexto](/producto/notificaciones-y-autenticacion/).
+- **WhatsApp Business API para notificaciones en el MVP** — técnicamente barato, pero queda como mejora futura condicionada a evidencia real del piloto de que las fallas de entrega de push están causando problemas — [ver contexto](/producto/notificaciones-y-autenticacion/).
+- **Guardar el token de sesión en `localStorage` en la versión web** — descartado: `localStorage` es accesible desde JavaScript, así que cualquier script inyectado en la página puede leerlo. El refresh token va en una **cookie `httpOnly`**, que JavaScript no puede tocar — [ver contexto](/producto/notificaciones-y-autenticacion/).
+- **Google/Apple como método de login primario y único** — lo descartado es que reemplace al teléfono, no el login social en sí: el teléfono sigue siendo el método primario porque calca el patrón de Yape que el dueño ya conoce y funciona en un dispositivo compartido entre personal. **Google Sign-In sí se ofrece al lado**, como segunda puerta a la misma cuenta: es gratis en Firebase Auth y resuelve la recuperación cuando el dueño pierde el chip — [ver contexto](/producto/notificaciones-y-autenticacion/).
+
+## Multi-sucursal y roles
+
+- **UI multi-sucursal completa en el MVP** — el esquema de datos ya está preparado para múltiples sucursales, pero el MVP solo expone en la interfaz la gestión de una sucursal por cuenta inicialmente — [ver contexto](/producto/multi-sucursal/).
+- **Teléfono personal por empleado** — descartado por la zona gris legal de tipo BYOD/laboral en Perú (no existe un estatuto claro que obligue o prohíba que el empleador entregue un dispositivo de trabajo); en su lugar se usa un dispositivo de trabajo compartido por sucursal — [ver contexto](/producto/multi-sucursal/).
+- **Modelo de roles Dueño/Encargado** — se evaluó un segundo tipo de usuario (rol "Encargado", operativo, sin acceso a financials) para cubrir sucursales donde el dueño no puede estar presente cada noche, pero se descartó a favor de un **actor único** (el Dueño): no había una segunda identidad real que modelar, y la necesidad operativa se resolvía por completo con un dispositivo compartido que se queda autenticado a la cuenta del dueño, sin pagar el costo de un segundo flujo de autenticación, un flujo de invitación, ni un sistema de permisos — [ver contexto](/producto/multi-sucursal/).
+
+## Mecanismos de negocio evaluados y descartados
+
+- **Posicionar a Kilo como "más barato que la competencia"**: descartado porque es falso frente al competidor más probable en Lima. Fudo cuesta **US$35/mes** (Plan Avanzado) y ya incluye control de inventario, mermas, vencimientos y proveedores. El argumento competitivo se reconstruyó alrededor de **no necesitar un POS ni registrar ventas** — que es el trabajo que este segmento realmente no hace — y de la ausencia de estacionalidad semanal en la sugerencia de compra de Fudo — [ver contexto](/producto/vision-general/).
+- **Detección automática de pagos vía notificaciones del teléfono**: leer las notificaciones del teléfono (por ejemplo de Yape/Plin) para inferir automáticamente una compra fue descartado — en Android implica pedir un permiso de alto riesgo (acceso a notificaciones del sistema) difícil de justificar y de aprobar; en iOS es directamente imposible por las restricciones de la plataforma. No se construye — [ver contexto](/producto/vision-general/).
+- **Automatizar pedidos a proveedores vía WhatsApp**: automatizar el envío del pedido de compra directamente a un proveedor por WhatsApp fue descartado porque la mayoría de restaurantes pequeños en Lima no tienen un proveedor fijo — compran en el mercado mayorista o a distintos proveedores según disponibilidad y precio del día. Automatizar un flujo que asume un proveedor fijo no encaja con la realidad operativa de este segmento — [ver contexto](/producto/vision-general/).

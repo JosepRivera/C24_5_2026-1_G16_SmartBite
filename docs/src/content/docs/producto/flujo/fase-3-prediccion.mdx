@@ -1,0 +1,79 @@
+---
+title: "Fase 3 — Procesamiento automático (nocturno)"
+description: Holt-Winters y el sistema de 3 capas de arranque en frío, con ejemplos numéricos completos (El Buen Sazón y La Cusqueñita).
+---
+
+import { Aside, Badge, Steps } from '@astrojs/starlight/components';
+
+Cada noche, el sistema recalcula, insumo por insumo, usando **suavizamiento exponencial de Holt-Winters** (un método estadístico de pronóstico que se ajusta solo, sin reglas escritas a mano, a medida que llegan datos nuevos) sobre el historial de consumo. El batch corre **una vez al día, a una hora fija de bajo tráfico** (aprox. 5-6am hora Perú, no a medianoche), para dar tiempo a los restaurantes que cierran tarde a grabar su registro de voz antes de que corra. Un registro que llega después del corte simplemente se recoge en el batch del día siguiente.
+
+- **Nivel**: la línea base de consumo diario "normal" actual de ese insumo.
+- **Tendencia**: si el consumo está subiendo o bajando con el tiempo.
+- **Estacionalidad semanal**: el patrón que se repite cada semana, **aprendido automáticamente y sin ninguna configuración posible** a partir del consumo real registrado — por ejemplo, "los viernes siempre se vende más que los martes" aunque el local abra ambos días sin cerrar ninguno.
+
+Un **cierre completo (consumo cero) nunca lo infiere el modelo por su cuenta**: requiere una señal explícita, el toggle diario o la regla de cierre recurrente (ver [Fase 2, manejo de huecos](/producto/flujo/fase-2-registro-diario/)). Silencio total sin ninguna de esas dos señales es un hueco (caso b de la Fase 2), no un cierre confirmado. Una vez marcado como real, ese cero entra al historial y Holt-Winters lo incorpora a la estacionalidad semanal igual que cualquier otro dato real.
+
+## Arranque en frío (cold start): sistema de 3 capas <Badge text="Decidido" variant="success" />
+
+Durante los primeros ~28 días, un insumo todavía no tiene suficiente historial propio. Kilo resuelve esto con tres capas que trabajan juntas.
+
+<Aside type="tip" title="Resumen rápido de las 3 capas">
+- **Capa 2** (construida para el MVP): reparte el gasto declarado por categoría de forma pareja entre los insumos de esa categoría, como estimación del día 0.
+- **Capa 3** (construida para el MVP, ya es el mecanismo central): cada día real que llega reemplaza un día de esa estimación inicial, hasta acumular ~28 días reales.
+- **Capa 1** (mejora automática con el tiempo, no es una funcionalidad separada a construir): una vez que hay varios restaurantes del **mismo tipo de cocina** con historial real, ese patrón agregado y anonimizado se usa para hacer más inteligente el reparto de la Capa 2 del **día 0** de un restaurante nuevo — nunca para reemplazar datos reales ya existentes.
+</Aside>
+
+### Ejemplo completo: Restaurante #1 — "El Buen Sazón" (el primero de la plataforma)
+
+Al no existir ningún otro restaurante del mismo tipo de cocina en la plataforma todavía, no hay patrón agregado disponible (Capa 1). Se usa directamente la **Capa 2**: reparto parejo dentro de la categoría.
+
+- Gasto declarado en la categoría "proteínas": **S/3000/mes**.
+- Insumos declarados en esa categoría: pollo, res, pescado (3 insumos).
+- Estimación de día 0 por insumo: **S/3000 ÷ 3 = S/1000 cada uno**, convertido a una cantidad diaria estimada según precio unitario de referencia.
+
+<Steps>
+1. **Día 1**: llega el primer dato real de consumo de pollo. Ese día deja de usar la estimación de la Capa 2 y usa el dato real (Capa 3: 1 de 28 días reemplazado).
+2. **Días 2 a 27**: cada día que pasa con un registro real reemplaza, uno por uno, otro día de la estimación inicial. El insumo pollo va acumulando cada vez más señal real y cada vez menos dependencia de la estimación pareja del día 0.
+3. **Día 28**: se completan **4 ciclos semanales** de datos reales. A partir de aquí, el insumo pollo de "El Buen Sazón" se considera con historial **totalmente real**, sin ninguna estimación de arranque en frío restante.
+</Steps>
+
+### Meses después: Restaurante #50 — "La Cusqueñita" (mismo tipo de cocina) <Badge text="Por validar en piloto" variant="caution" />
+
+Para este momento, ya existen varios restaurantes criollos con historial real en la plataforma. Ese historial agregado (anonimizado) muestra, por ejemplo, un patrón como:
+
+- Pollo: **~45%** del gasto de la categoría proteínas.
+- Res: **~30%**.
+- Pescado: **~25%**.
+
+Este patrón se aplica **únicamente** al gasto declarado por "La Cusqueñita" (nunca copia el número real de otro restaurante) y está **segmentado por tipo de cocina** — el patrón de una cevichería nunca se mezcla con el de un restaurante criollo. Un tipo de cocina sin restaurantes previos en la plataforma cae de vuelta al reparto parejo de la Capa 2. Y lo más importante: este dato agregado **nunca sustituye las predicciones reales día a día** de un restaurante que ya tiene datos propios — solo mejora la primera estimación a ciegas.
+
+"La Cusqueñita" declara **S/2400/mes** en la categoría proteínas. En vez de repartir parejo (S/800 a cada uno de 3 insumos), Kilo aplica el patrón 45/30/25 **a su propio número declarado**:
+
+| Insumo | % del patrón agregado | Estimación día 0 |
+|---|---|---|
+| Pollo | 45% | S/1080 |
+| Res | 30% | S/720 |
+| Pescado | 25% | S/600 |
+
+A partir de aquí, "La Cusqueñita" pasa por el **mismo proceso de Capa 3** que "El Buen Sazón": día 1 a día 27, cada registro real reemplaza un día de la estimación inicial, hasta llegar al día 28 con historial totalmente real por insumo.
+
+<Aside type="note" title="Por qué 28 días (y qué significa realmente ese umbral)">
+28 días son **4 ciclos semanales**, no uno — conviene ser preciso, porque la justificación depende de eso.
+
+Holt-Winters con estacionalidad semanal (m=7) necesita como mínimo **2 ciclos completos, es decir 14 días**, solo para **inicializar** los índices estacionales. La práctica estándar es contar con **3-4 ciclos** antes de que esos índices sean mínimamente estables. Por eso **28 días = 4 ciclos** es un mínimo práctico defendible para el MVP.
+
+Ahora, con honestidad: para índices semanales genuinamente estables sobre datos ruidosos de restaurante, lo deseable serían **8-12 semanas**. 28 días es el piso operativo, no el punto donde el modelo ya está maduro.
+
+El umbral de 28 días tampoco significa "~100% de confianza". Significa exactamente una cosa: **ya no queda ninguna estimación de arranque en frío** en el historial de ese insumo.
+</Aside>
+
+## "Estimado" pesa menos que "real"
+
+Los días marcados como **estimado** (ver [Fase 2, manejo de huecos](/producto/flujo/fase-2-registro-diario/)) cuentan menos que los días **reales**, en dos lugares distintos:
+
+1. El contador de arranque en frío de **28 días** — **esto sí está decidido para el MVP**: solo los días reales cuentan para llegar al punto en que ya no queda ninguna estimación de arranque en frío para ese insumo. Es una distinción barata de mantener (un simple filtro al contar) y que importa para saber cuándo confiar en el modelo, así que se mantiene tal cual.
+2. **La actualización del modelo Holt-Winters** con un peso reducido para días estimados (por ejemplo, la mitad del peso de un día real) — esto es una extensión real y conocida del suavizamiento exponencial (suavizamiento exponencial ponderado), pero **queda como mejora de v2/futuro, no como alcance del MVP**. Es una mejora de precisión genuina, pero implementar una ponderación por observación individual requiere una implementación de Holt-Winters no estándar (la mayoría de librerías listas para usar no lo soportan de forma nativa) — una complejidad desproporcionada para un piloto de 3-5 restaurantes. Para el MVP, un día estimado y uno real cuentan **por igual** en la actualización del modelo; la única distinción que sí se mantiene desde el día uno es la del punto 1 (el contador de 28 días).
+
+---
+
+Anterior: [Fase 2 — Registro diario por voz](/producto/flujo/fase-2-registro-diario/) · Siguiente: [Fase 4 — Recomendador de compras](/producto/flujo/fase-4-recomendador/)

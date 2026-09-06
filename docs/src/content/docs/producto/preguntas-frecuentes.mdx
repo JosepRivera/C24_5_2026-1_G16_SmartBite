@@ -1,0 +1,100 @@
+---
+title: Preguntas frecuentes
+description: Por qué se tomó cada decisión y qué pasa en los casos límite — consolidado en un solo lugar para no inflar cada página individual del producto.
+---
+
+Esta página junta el razonamiento ("¿por qué?") y los casos límite ("¿qué pasa si...?") de las decisiones de producto, agrupados por tema. Las páginas principales explican **qué es** cada mecanismo; aquí se explica **por qué** y **qué pasa en el caso raro**.
+
+## Visión general y modelo de negocio
+
+### ¿Qué tan confiable es la cifra de desperdicio que se menciona (5-12%)?
+
+Es una estimación de trabajo, no un hecho confirmado, y conviene ser explícito sobre lo débil que es su origen.
+
+El rastro real es este: la cifra aparece en un artículo de blog de **PANCA que no cita ninguna fuente**. No hay un estudio detrás al cual rastrearla. Además, **PANCA se contradice a sí misma**: otro artículo suyo da un rango distinto, **5-10%**. En resumen, **no existe hoy una cifra rigurosa y específica para Lima**.
+
+La referencia externa mejor sostenida es la de la **National Restaurant Association (EE.UU.)**: **4-10% de desperdicio pre-consumidor** (lo que se pierde antes de que el plato llegue al cliente) medido sobre el costo de insumos. Está correctamente atribuida, correctamente etiquetada como dato de EE.UU. y sí es comparable con lo que Kilo mide.
+
+Una aclaración que importa: la cifra de **~17% de desperdicio de alimentos a nivel global** que suele citarse **no es de la FAO, es del *Food Waste Index Report 2021* del PNUMA (UNEP)**, y mide desperdicio a nivel de consumidor (11% hogares + 5% servicio de comida + 2% retail). **No mide el desperdicio de un restaurante como porcentaje de su costo de insumos**, así que no es comparable con el 4-10% de la NRA y no debe usarse como si lo fuera.
+
+El rango específico para Lima queda como supuesto por validar con datos reales del piloto (ver [Visión general](/producto/vision-general/)).
+
+### ¿Por qué se menciona que el cliente no tiene POS ni RUC si Kilo no los necesita técnicamente?
+
+Kilo funciona igual tenga el restaurante POS (sistema de punto de venta) o RUC (Registro Único de Contribuyente) o no — no depende de ninguno de los dos para operar. Se mencionan porque son la señal de qué tan informal es el negocio objetivo, no un requisito del producto. Un restaurante con POS también podría usar Kilo sin problema técnico; simplemente ya no sería el segmento desatendido que el producto prioriza para el piloto y el pricing (ver [Visión general](/producto/vision-general/)).
+
+## Registro diario y huecos
+
+### ¿Qué pasa si un día tiene la regla de cierre recurrente activada pero ese día excepcionalmente el restaurante sí abre?
+
+Nada se rompe. Un registro de voz real ese día siempre tiene prioridad sobre la regla recurrente, así que ese día queda con el dato real, no en cero — la regla recurrente es solo un valor por defecto automático, nunca descarta un dato real cuando existe (ver [Fase 2](/producto/flujo/fase-2-registro-diario/)).
+
+### ¿Qué pasa si un cierre real no queda cubierto por ninguna de las dos reglas (toggle o regla recurrente)?
+
+Supongamos que el local estuvo cerrado martes y miércoles sin marcar ningún toggle ni regla, y el jueves hay un dato real de consumo alto porque se repuso todo el stock en un solo día. El sistema no tiene forma de saber que esos días no hubo actividad: simplemente ve un hueco de 3 días y reparte el consumo real del jueves entre los 3 por igual, distorsionando el patrón de ese día de la semana. Nada da error, pero si ocurre seguido (el mismo día cada semana), la precisión estacional del modelo para ese día se degrada — por eso conviene declarar una regla recurrente cuando el patrón de cierre es predecible (ver [Fase 2](/producto/flujo/fase-2-registro-diario/)).
+
+### ¿Qué pasa si hay dos compras del mismo insumo el mismo día a precios distintos?
+
+Cada compra ya se registra como su propio lote (fecha + cantidad + costo), así que dos compras el mismo día a precios distintos se tratan simplemente como dos lotes separados — el mismo mecanismo que ya se usa para compras en días distintos, sin ningún caso especial. No hace falta ningún cálculo de promedio ponderado ni se pierde precisión: cada lote conserva su propio costo real (ver [Fase 2](/producto/flujo/fase-2-registro-diario/)).
+
+## Predicción
+
+### ¿Por qué FIFO es una asunción segura para las alertas de vencimiento, aunque la cocina no la siga al pie de la letra?
+
+Si la práctica real en cocina no coincide exactamente con FIFO (se consume primero lo más viejo), la cifra total de soles perdidos al mes sigue siendo precisa: está determinada por el stock total remanente frente al consumo esperado, no por el orden de uso. Lo único que podría ser impreciso es a qué lote específico se atribuye una alerta puntual, no el total de desperdicio (ver [Fase 4](/producto/flujo/fase-4-recomendador/)).
+
+### ¿Qué significa exactamente "ahorro" en los reportes y en el precio?
+
+Es el costo de compra bruto de los insumos que ya no se desperdician — dinero que el dueño no gasta reponiendo stock ni pierde en insumo vencido, calculado al costo de compra del insumo, no al precio de venta del plato terminado. No es utilidad neta, no es ingreso, y no toma en cuenta el margen general del negocio (ver [Fase 4](/producto/flujo/fase-4-recomendador/) y [Pagos y pricing](/producto/pagos-y-pricing/)).
+
+## Pagos
+
+### ¿Por qué el precio no es una banda fija por tier?
+
+Porque el precio es un porcentaje del ahorro real medido, que varía mes a mes y restaurante a restaurante; una banda fija no reflejaría lo que Kilo realmente le ahorró a cada dueño ese mes específico.
+
+Hubo además una razón concreta para eliminar los tiers: **la tabla de tiers no cuadraba con su propia fórmula**. Decía cobrar 10-20% del ahorro, pero los precios listados por tier no salían de aplicar ese porcentaje a los ahorros listados. Hoy el mecanismo es una sola fórmula: **15% del ahorro medido ese mes, con piso de S/35 + IGV y techo de S/89 + IGV** (ver [Pagos y pricing](/producto/pagos-y-pricing/) y [Decisiones descartadas](/producto/descartado/)).
+
+### ¿Por qué aparece el IGV si somos una startup chica?
+
+Porque para cobrarle a un restaurante que quiere factura, Kilo tiene que estar formalmente registrado — y **toda venta formal en Perú lleva 18% de IGV**. No es una decisión de Kilo ni depende del tamaño de la empresa.
+
+Lo que sí es una decisión es **cómo se anuncia el precio**. Si se publicara con IGV adentro, S/35 serían en realidad **S/29.66 de ingreso** y **S/5.34 se irían a SUNAT**: el 15.25% de los ingresos saldría del propio margen de Kilo (ver el desglose en [Costos](/producto/costos/)). Diciendo "+ IGV" de forma explícita, un cliente **con RUC** lo recupera como **crédito fiscal** y no le cuesta nada real.
+
+La tensión hay que decirla completa: un restaurante **sin RUC no puede recuperarlo**, así que ese 18% es un sobrecosto real justo para el cliente más informal, que es el que menos margen tiene para absorberlo. Es un problema comercial del modelo, no técnico: no se arregla con ingeniería.
+
+### ¿Por qué el programa de referidos solo paga cuando la cuenta referida convierte a pago real?
+
+Para cerrar el loophole obvio de crear cuentas desechables para "farmear" meses gratis: una cuenta que nunca convierte a pago real nunca dispara ninguna recompensa (ver [Pagos y pricing](/producto/pagos-y-pricing/)).
+
+### ¿Por qué no acortar la ventana de 3-4 meses antes del primer pago real (2-3 de piloto + 1 de referido)?
+
+Porque coincide, convenientemente, con la misma ventana de comparación mes-1-vs-mes-4 que la narrativa de valor del producto ya necesita (S/380 → S/200, ver [Ahorro visible](/producto/flujo/fase-4-recomendador/)) para demostrar valor real antes del primer cobro (ver [Pagos y pricing](/producto/pagos-y-pricing/)).
+
+### ¿Por qué elegir Culqi si tiene quejas de la comunidad sobre anti-fraude y soporte?
+
+Porque esas quejas importan menos en este caso: es facturación B2B recurrente de un cliente ya conocido y verificado (el dueño del piloto), no un checkout anónimo de consumidor donde el riesgo de fraude es mucho mayor. La menor barrera de entrada de Culqi (solo DNI, sin RUC) pesa más en esta etapa (ver [Pagos y pricing](/producto/pagos-y-pricing/)).
+
+## Multi-sucursal
+
+### ¿Por qué diseñar el esquema de datos multi-sucursal desde el día uno, si el MVP solo muestra una sucursal en la UI?
+
+Adaptar un esquema de una sola sucursal a multi-sucursal más adelante es una migración costosa. Diseñarlo multi-sucursal-ready desde el principio cuesta casi nada extra en esta etapa, mientras la UI del MVP se mantiene simple (ver [Multi-sucursal](/producto/multi-sucursal/)).
+
+### ¿Por qué el costo de OTP no es un problema para el dispositivo compartido?
+
+Porque esta autenticación ocurre **una sola vez por dispositivo** (no en cada uso) y el SMS de verificación de Firebase Auth cuesta **US$0.10 (S/0.34) por mensaje a Perú**, con los primeros 10 de cada día sin cobro. Un puñado de envíos de OTP (código de un solo uso) por restaurante es un costo de alta, no un costo mensual (ver [Multi-sucursal](/producto/multi-sucursal/) y [Costos](/producto/costos/)).
+
+## Notificaciones y login
+
+### ¿Qué pasa si el dueño pierde el chip o cambia de número?
+
+Para eso el login **no es solo por teléfono**. Google Sign-In se ofrece como **segunda puerta a la misma cuenta**, gratis en Firebase Auth. Si se pierde el chip, se entra con Google; si se pierde el acceso a Google, se entra con el teléfono. Ninguna de las dos pérdidas deja al dueño afuera de su propio historial (el diseño completo está en [Notificaciones y autenticación](/producto/notificaciones-y-autenticacion/)).
+
+### ¿Por qué el teléfono es el método primario y no Google?
+
+Porque calca el patrón que el dueño ya usa todos los días con Yape, y funciona en un dispositivo de trabajo compartido entre personal, donde una cuenta de Gmail personal encaja peor. Google queda como segundo método, no como reemplazo (ver [Decisiones descartadas](/producto/descartado/)).
+
+### ¿Por qué no hay recordatorio automático de expiración de suscripción del sistema operativo?
+
+Porque la facturación pasa por Culqi directamente, no por el cobro in-app nativo de Google Play/App Store — el 100% de la lógica de recordatorio la construye Kilo mismo, vía push + inbox in-app (ver [Notificaciones y autenticación](/producto/notificaciones-y-autenticacion/)).

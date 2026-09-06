@@ -1,0 +1,103 @@
+---
+title: Notificaciones y autenticación
+description: Estrategia de notificaciones por capas y autenticación por teléfono + OTP, ajustadas al contexto de dispositivos y hábitos de pago en Perú.
+---
+
+import { Aside, Badge } from '@astrojs/starlight/components';
+
+## Notificaciones
+
+Kilo usa un enfoque **por capas** para las alertas operativas (vencimientos, recomendaciones de compra, recordatorios de pago):
+
+### 1. Push nativo, gratis — canal por defecto
+
+Todas las alertas operativas se envían primero por push nativo, usando **FCM** (Firebase Cloud Messaging, el servicio de notificaciones push de Google). No tiene costo por mensaje ni tope de envíos.
+
+<Aside type="caution" title="Riesgo real de entrega">
+**Xiaomi** (~28% del mercado peruano de smartphones) y **Samsung** (~25%) limitan agresivamente la entrega de push en segundo plano por su gestión de batería. Entre las dos marcas cubren más de la mitad de los dispositivos del país, así que esto no es un caso borde: es el caso típico. Por eso el onboarding debe incluir un paso explícito pidiendo al dueño **desactivar la optimización de batería** para la app.
+
+*Fuente de las cuotas de mercado: Omdia, Perú, Q2 2026.*
+</Aside>
+
+### 2. Inbox de notificaciones in-app — respaldo garantizado
+
+Una bandeja de notificaciones dentro de la propia app (como una campana/lista) asegura que nada se pierda silenciosamente aunque el push falle — **todo queda registrado ahí permanentemente**, independientemente de si el push se entregó o no.
+
+### 3. SMS — descartado para notificaciones generales
+
+Un SMS a Perú por un proveedor de mensajería tipo Twilio cuesta **~US$0.2476** (tarifa publicada). A ese precio **no es viable a ninguna escala real** para avisos operativos diarios. El SMS sí se usa, pero solo para el código de acceso, y por otra vía mucho más barata (ver más abajo).
+
+### 4. WhatsApp Business API — descartado
+
+Se evaluó y quedó fuera. Los códigos de acceso no viajan por la categoría **utility** de Meta sino por la de **authentication**, cuya tarifa por país solo se publica en fichas descargables: para tener el número real de Perú hacía falta la **cotización de un BSP** (proveedor de soluciones de negocio de WhatsApp) que nunca se consiguió. Con el SMS de Firebase costando **S/0.34** (ver abajo), el ahorro que WhatsApp podría dar dejó de justificar montar y mantener la integración.
+
+Como la facturación pasa por Culqi directamente, y no por el cobro in-app de Google Play o App Store, toda la lógica de recordatorio la construye Kilo, vía push + bandeja in-app.
+
+## Autenticación <Badge text="Decidido" variant="success" />
+
+El proveedor de identidad es **Firebase Authentication** (el servicio de login de Google, construido sobre Google Cloud Identity Platform). Kilo no guarda contraseñas ni implementa su propio login.
+
+Hay **dos puertas a la misma cuenta**, y esto es deliberado:
+
+| Puerta | Para qué sirve | Costo |
+|---|---|---|
+| **Teléfono + código de un solo uso** (primaria) | Vincular el dispositivo compartido de cada sucursal | **US$0.10 por SMS** a Perú; los primeros 10 del día no se cobran |
+| **Cuenta de Google** (segunda) | Entrar cuando el teléfono ya no está disponible | **Gratis** |
+
+Ambas están incluidas en el mismo servicio, que **no cobra nada hasta 50,000 usuarios activos al mes** — Kilo no se acerca ni de lejos a ese número. Lo único que se factura es el SMS.
+
+### Por qué el teléfono es la puerta principal
+
+- Coincide con el patrón que este segmento ya usa a diario y en el que ya confía: **Yape** entra exactamente igual, con número y código, sin contraseña.
+- El dispositivo de cada sucursal es **compartido entre el personal** (ver [Multi-sucursal](/producto/multi-sucursal/)). Una cuenta personal de Gmail de un empleado no debería quedar pegada al equipo del local; un número del negocio sí.
+- No hay contraseña que olvidar, ni que reusar, ni que filtrarse.
+
+El SMS se envía **una vez por dispositivo vinculado**, no cada vez que alguien abre la app. Es un costo de instalación por sucursal, no un costo mensual.
+
+### Por qué existe la segunda puerta
+
+<Aside type="tip" title="El chip se pierde, la cuenta no">
+Si el login fuera solo por teléfono, perder el chip, que lo roben, o cambiar de número dejaría al dueño **encerrado fuera de su propia cuenta**, con su historial adentro y sin forma de recuperarlo.
+
+Por eso el dueño vincula además una **cuenta de Google** durante el onboarding. Si pierde el chip, entra con Google. Si pierde el acceso a Google, entra con el teléfono. **Dos caminos independientes al mismo dato**, y ninguno depende del otro.
+</Aside>
+
+Vincular Google es un paso de un toque y no cuesta nada, así que no hay razón para no ofrecerlo. Lo que sí se descarta es que Google sea la **única** vía: no resuelve el caso del dispositivo compartido del local, y este segmento no vive en su correo.
+
+## Sesión y seguridad <Badge text="Decidido" variant="success" />
+
+El **OTP** (código de un solo uso) sirve para autenticar **una vez**: probar que la persona controla ese número. Los **tokens** son lo que mantiene la sesión abierta **después**. No son alternativas, son dos etapas distintas. Y como Kilo decidió que el dispositivo de cada sucursal quede autenticado **indefinidamente** (ver [Multi-sucursal](/producto/multi-sucursal/)), el diseño de tokens importa **más**, no menos: esa sesión nunca vence sola.
+
+### Estrategia de tokens
+
+- **Access token corto** (~1 hora de vida), que acompaña cada llamada a la API.
+- **Refresh token largo**, que renueva el access token sin volver a pedir OTP.
+- **Dónde se guarda el refresh token, según plataforma** — importa porque Kilo ahora soporta web además de móvil:
+  - **Móvil (Android/iOS)**: en el almacenamiento seguro del sistema operativo — **Keychain** en iOS, **Keystore** en Android.
+  - **Web**: en una **cookie `httpOnly`**, nunca en `localStorage`. Una cookie `httpOnly` no es accesible desde JavaScript, así que un script inyectado en la página no puede robarla.
+
+### Revocación de dispositivos
+
+El dueño ve una **lista de los dispositivos vinculados** a su cuenta — cuál sucursal, cuándo se vinculó, cuándo se usó por última vez — y puede **revocar cualquiera desde su propio teléfono**.
+
+Esto no es opcional: el dispositivo compartido de una sucursal queda logueado indefinidamente en un local donde **el personal rota**. Si se pierde, se lo roban, o un empleado se va en malos términos, tiene que haber una forma de matar esa sesión **sin ir físicamente al local**. Revocar un dispositivo **invalida su refresh token**: la próxima vez que intente renovar, se cae y pide OTP de nuevo.
+
+### Límite de envíos de OTP
+
+<Aside type="danger" title="El límite de envíos protege la caja, no solo la cuenta">
+Cada SMS de verificación a Perú cuesta **US$0.10 ≈ S/0.34** (ver [Costos](/producto/costos/)). Si alguien spamea el botón de "enviar código", cada clic es **plata real quemada**: 1,000 clics son ~S/340 que paga Kilo. Es un ataque que **no le cuesta nada al atacante**.
+
+Por eso el límite de envíos por número y por dispositivo no es una medida de seguridad opcional, es **protección de caja**: hay un **límite de intentos por número por hora**, con **espera creciente entre reenvíos**.
+</Aside>
+
+### Modelo de amenazas: qué pasa en el peor caso
+
+La debilidad conocida del teléfono es el **SIM swap** (que alguien se apodere del número). Tener dos puertas no la elimina: la amplía, porque ahora también existe la vía de Google. Conviene entonces medir el daño real en vez de asumirlo.
+
+Quien entre solo ve el **inventario de un restaurante**. Kilo **no guarda datos de tarjeta** — esos los custodia Culqi mediante tokenización y Kilo nunca los toca (ver [Pagos y pricing](/producto/pagos-y-pricing/)) — ni guarda datos personales sensibles más allá de un número de teléfono y un correo. El daño potencial es bajo comparado con, por ejemplo, una app bancaria, y el dueño puede cortar cualquier sesión desde la lista de dispositivos.
+
+En el balance, la segunda puerta **evita un problema seguro** — quedarse encerrado fuera de la cuenta al perder el chip, que va a pasarle a alguien — a cambio de agrandar un poco una superficie de ataque cuyo botín es un inventario de verduras.
+
+### Lo que este método gana frente a correo + contraseña
+
+No hay base de contraseñas que se pueda filtrar, no hay reuso de contraseñas entre servicios, y no hay flujo de "recuperar contraseña" que atacar — históricamente uno de los puntos más débiles de cualquier login. Google custodia su propia autenticación, con verificación en dos pasos si el dueño la tiene activada, y Kilo nunca ve esa credencial.

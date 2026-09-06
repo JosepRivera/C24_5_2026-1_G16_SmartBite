@@ -1,0 +1,58 @@
+---
+title: "Fase 1 — Onboarding"
+description: Catálogo pre-cargado (SISAP de MIDAGRI), alias/sinónimos, unidad de medida, datos declarados y clasificación crítico/secundario de insumos.
+---
+
+El onboarding **no** consiste en que el dueño escriba insumo por insumo desde cero. Kilo pre-carga un catálogo de insumos y el dueño **busca y selecciona** de ahí.
+
+## Catálogo base
+
+El catálogo está organizado por categoría. Un set inicial ilustrativo es: **proteínas, verduras y frutas, granos y abarrotes, lácteos, condimentos y especias, bebidas, panadería**. Esta lista es una **plantilla de partida, no un set cerrado ni fijo**: el dueño puede agregar o renombrar categorías que no calcen con su menú específico — por ejemplo, una cevichería podría querer una categoría "mariscos" separada de "proteínas".
+
+El catálogo se construye conceptualmente a partir de los datos de mercados mayoristas del **SISAP** (Sistema de Abastecimiento y Precios, la plataforma de datos de mercados mayoristas) **de MIDAGRI** (Ministerio de Desarrollo Agrario y Riego), porque ese catálogo usa **nombres comerciales reales con variedad** (ej. "papa canchán", "pollo entero"), no una tabla nutricional genérica.
+
+Cada insumo del catálogo tiene:
+
+- Un **nombre canónico** (ej. "Limón sutil").
+- **Alias/sinónimos conocidos** (ej. "limón" = alias de "Limón sutil", la forma corta en que el dueño realmente lo dice en voz alta), para que el dictado por voz reconozca variaciones de lenguaje y **use el insumo existente en vez de crear un duplicado**.
+
+Si una frase dictada no calza con ningún alias con suficiente confianza, el sistema **pide confirmación al dueño** antes de crear un insumo nuevo — nunca crea uno silenciosamente por una transcripción ambigua.
+
+## Unidad de medida y conversiones
+
+Cada insumo tiene **su propia unidad de medida fija, definida una sola vez al crearlo** (kg, litros, unidades, docena, atado — lo que tenga sentido para ese insumo específico) — no cambia después, y no todos los insumos comparten la misma unidad.
+
+Las cantidades informales que usa el dueño al hablar (ej. "medio balde", "una jaba") se resuelven con una **conversión configurada una sola vez por combinación insumo+frase** (no una tabla global de conversión), y siempre se convierten a **la unidad propia de ese insumo** — no siempre a kg. Por ejemplo:
+
+- La primera vez que el dueño dice "medio balde de tomate" (insumo definido en kg), el sistema pregunta a cuántos kg equivale, y guarda esa equivalencia para las próximas veces que diga esa misma frase para ese mismo insumo.
+- La primera vez que dice "una jaba de aceite" (insumo definido en litros), el sistema pregunta a cuántos **litros** equivale — no a cuántos kg — porque la unidad propia de "Aceite" es litros.
+
+Cada combinación insumo+frase queda guardada de forma independiente, siempre en la unidad que le corresponde a ese insumo.
+
+## Datos declarados en el onboarding
+
+Además del catálogo de insumos, el dueño declara:
+
+- **Intervalo de compra, declarado por categoría** (no un solo número global): cada cuántos días el dueño va a comprar cada tipo de insumo — por ejemplo, proteínas y verduras cada 2-3 días, abarrotes y granos cada 1-2 semanas. Este dato alimenta directamente al recomendador de compras de la [Fase 4](/producto/flujo/fase-4-recomendador/), que necesita saber, por insumo/categoría, cuántos días adelante debe cubrir cada recomendación.
+- **Gasto mensual en insumos, desglosado por categoría** — **no un solo número global**. Este desglose por categoría alimenta la estimación de arranque en frío (ver [Fase 3, Capa 2](/producto/flujo/fase-3-prediccion/)).
+
+## Clasificación crítico vs. secundario
+
+Cada insumo se clasifica como:
+
+- **Crítico**: se registra a diario. Típicamente proteínas y otros insumos caros o perecibles.
+- **Secundario**: se registra semanalmente, o se deja en un valor de referencia fijo. Típicamente insumos baratos y de larga duración (ej. sal).
+
+Esta clasificación reduce la fricción del registro diario por voz sin perder precisión donde realmente importa — es el principio clásico de inventario **ABC / Pareto** (clasificar según cuánto valor o riesgo concentra cada insumo): pocos insumos concentran la mayor parte del valor y del riesgo, y son esos los que vale la pena rastrear con frecuencia.
+
+## Alternativa manual a la voz
+
+Para quien prefiera no usar voz, o para dar de alta un insumo genuinamente nuevo que no está en ningún catálogo:
+
+1. **Chips/botones táctiles** para insumos conocidos.
+2. **Stepper numérico** para la cantidad.
+3. **Teclado de texto libre**, solo como último recurso.
+
+---
+
+Siguiente: [Fase 2 — Registro diario por voz](/producto/flujo/fase-2-registro-diario/)

@@ -1,0 +1,60 @@
+---
+title: Kilo
+description: Documentación de producto de Kilo — predicción de demanda de insumos y recomendación de compras para restaurantes pequeños y medianos en Lima.
+template: splash
+hero:
+  tagline: Predicción de demanda de insumos y recomendación de compras para restaurantes pequeños y medianos en Lima. Menos merma, menos quiebres de stock, en soles medibles.
+  actions:
+    - text: Empezar por la visión general
+      link: /producto/vision-general/
+      icon: right-arrow
+    - text: Ver el flujo operativo
+      link: /producto/flujo/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Por dónde empezar
+
+<CardGrid>
+	<Card title="Visión general" icon="open-book">
+		El problema, el cliente, la solución y por qué no la competencia. **Empieza acá si es tu primera vez.**
+	</Card>
+	<Card title="Flujo operativo" icon="setting">
+		Las 4 fases del ciclo diario, de la carga de insumos hasta la recomendación de compra, con ejemplos numéricos.
+	</Card>
+	<Card title="Modelo de negocio" icon="star">
+		El problema en diez palabras, el perfil del cliente, cómo se gana dinero y las tres pruebas que tiene que pasar.
+	</Card>
+	<Card title="Pagos y pricing" icon="analytics">
+		Cómo se cobra (porcentaje del ahorro real medido), cuánto cuesta operar y por qué.
+	</Card>
+</CardGrid>
+
+## Referencia rápida
+
+<LinkCard
+	title="Preguntas frecuentes"
+	href="/producto/preguntas-frecuentes/"
+	description="El '¿por qué?' y el '¿qué pasa si...?' de cada decisión, en un solo lugar."
+/>
+
+<LinkCard
+	title="Multi-sucursal"
+	href="/producto/multi-sucursal/"
+	description="Un dueño, varias sucursales, un dispositivo compartido por local."
+/>
+
+<LinkCard
+	title="Notificaciones y autenticación"
+	href="/producto/notificaciones-y-autenticacion/"
+	description="Push + bandeja in-app, login por teléfono y código de un solo uso."
+/>
+
+<LinkCard
+	title="Decisiones descartadas"
+	href="/producto/descartado/"
+	description="Todo lo que se evaluó y se dejó fuera del alcance, con su razón."
+/>

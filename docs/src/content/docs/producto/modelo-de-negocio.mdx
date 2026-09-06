@@ -1,0 +1,104 @@
+---
+title: Modelo de negocio
+description: El problema en diez palabras, los actores del ciclo de negocio, el perfil del cliente, el mapa de valor y por qué Kilo pasa las tres pruebas de un modelo de negocio.
+---
+
+import { Aside, Badge, CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
+
+## El problema, en diez palabras
+
+<Aside type="tip">
+**El restaurante compra a ojo y bota comida que pagó.**
+</Aside>
+
+Todo lo demás sale de ahí. Si el problema no se puede decir en una frase corta, no está entendido.
+
+## Por qué Kilo es una startup y no un emprendimiento
+
+No basta con que use tecnología. Tres cosas separan una cosa de la otra:
+
+| | Kilo |
+|---|---|
+| **Crecimiento** | Sumar un restaurante cuesta **S/2.61 a S/4.46 al mes**. El costo fijo es el mismo con 5 restaurantes que con 50 (ver [Costos](/producto/costos/)). El ingreso puede crecer mucho más rápido que el gasto. |
+| **Innovación** | No es un sistema de inventario más. Lo distinto es **no pedir que se registre cada venta**: 30 segundos de voz al cierre y nada más (ver [Fase 2](/producto/flujo/fase-2-registro-diario/)). |
+| **Modelo de negocio** | No cobra una tarifa plana. Cobra **un porcentaje del ahorro que se pudo medir ese mes**. Eso es un cambio en la forma de cobrar, no solo en el producto. |
+
+Un negocio tradicional en este mismo rubro sería vender un sistema de inventario por una licencia fija. Eso ya existe y crece de forma lineal: un vendedor, una instalación, un cliente.
+
+## Actores del ciclo de negocio <Badge text="Decidido" variant="success" />
+
+Un ciclo de negocio se cierra cuando alguien pide un servicio y termina pagando por él. **Kilo necesita un solo actor: el Dueño del restaurante.**
+
+Vale contrastarlo con el caso donde hacen falta dos, porque la diferencia no es de tamaño:
+
+- **Uber necesita pasajero y conductor** porque Uber no tiene el auto ni maneja. Sin el conductor, el servicio que el pasajero pide **no existe**. El conductor es parte de la producción, no solo del consumo.
+- **Kilo sí produce lo que entrega.** La predicción sale de los datos del propio restaurante y del modelo que corre en el servidor de Kilo. No hay un tercero cuya participación haga falta para que el servicio exista.
+
+Por eso el perfil de cliente es uno solo, y por eso tampoco hay roles internos: no había una segunda identidad real que modelar (ver [Multi-sucursal](/producto/multi-sucursal/)).
+
+## Perfil del cliente
+
+**Quién es:** dueño de un restaurante pequeño o mediano en Lima, que compra insumos frescos varias veces por semana y decide esas compras él mismo.
+
+<CardGrid>
+	<Card title="Qué le duele" icon="warning">
+		Bota comida que ya pagó. Se queda sin un insumo en plena hora punta y pierde ventas. Y no sabe **cuánto** pierde: sabe que pierde.
+	</Card>
+	<Card title="Qué hace hoy para que duela menos" icon="setting">
+		Compra lo de siempre, por costumbre. Anota en un cuaderno o no anota. Le pregunta al cocinero. Compra de más "por si acaso". Va al mercado casi a diario.
+	</Card>
+	<Card title="Qué lo alegraría" icon="star">
+		Ver en soles cuánto se ahorró este mes. Dejar de pensar en la compra. Que el sistema **no lo obligue a cambiar cómo trabaja**.
+	</Card>
+</CardGrid>
+
+Lo importante de la columna del medio: el dueño **ya tiene una solución**, aunque sea mala. Comprar por costumbre funciona lo suficiente como para que nadie se muera. Kilo no compite contra la nada, compite contra la costumbre — que es gratis y no da trabajo.
+
+## Mapa de valor
+
+Es el espejo del perfil de arriba:
+
+| Del lado del cliente | Del lado de Kilo |
+|---|---|
+| **Bota comida** | Predicción por insumo y recomendación de cuánto comprar (ver [Fase 4](/producto/flujo/fase-4-recomendador/)) |
+| **Se queda sin stock** | La misma predicción, con estacionalidad semanal: sabe que el sábado no se parece al martes |
+| **No sabe cuánto pierde** | La cifra de ahorro del mes, en soles, que además es sobre lo que se cobra |
+| **No quiere cambiar cómo trabaja** | 30 segundos de voz al cierre. No hay que registrar ventas ni tener POS |
+| **Le gustaría no pensar en la compra** | La lista de compra llega sola en la mañana |
+
+## El modelo de negocio, nombrado
+
+**Suscripción de precio variable, ligado al resultado medido.**
+
+Es una suscripción en el sentido estricto: un pago recurrente por recibir un servicio, y el día que se deja de pagar se acaba el acceso a lo que genera valor nuevo. Lo que cambia frente a una suscripción común es que **el monto no es fijo**: es el 15% del ahorro medido ese mes, con piso de S/35 + IGV y techo de S/89 + IGV (ver [Pagos y pricing](/producto/pagos-y-pricing/)).
+
+### Las tres pruebas
+
+<Aside type="note" title="Rentable">
+Margen por restaurante de **S/30 a S/85 al mes** contra un costo marginal de **S/2.61 a S/4.46**. El punto de equilibrio está en **6 restaurantes** cobrando el techo, o 15 cobrando el piso.
+</Aside>
+
+<Aside type="note" title="Escalable">
+Sumar un restaurante **no suma personal**. El costo fijo es prácticamente el mismo con 5 que con 50 restaurantes: **US$115 al mes** en ambos casos.
+</Aside>
+
+<Aside type="note" title="Repetible">
+El onboarding es el mismo para cualquier restaurante, con el catálogo de insumos ya cargado (ver [Fase 1](/producto/flujo/fase-1-onboarding/)), y el cobro se confirma **automáticamente por API**. Nadie mira un teléfono para activar una cuenta.
+</Aside>
+
+La tercera prueba es la que descartó cobrar por Yape personal: funcionaba para diez clientes y se caía para cien, porque exigía una persona conciliando pagos a mano.
+
+## Por qué Kilo no es freemium <Badge text="Decidido" variant="success" />
+
+Un modelo con capa gratis permanente necesita una de dos cosas: **muchísimos usuarios** para vender publicidad, o **un bolsillo grande** que aguante años de pérdida. Kilo no tiene ninguna de las dos, y un restaurante en Lima no es un usuario que se pueda monetizar por publicidad.
+
+Dos cosas que podrían confundirse con freemium y no lo son:
+
+- **El piloto gratuito** dura 2-3 meses con 3-5 restaurantes, y tiene una función concreta: generar el historial de ahorro **sobre el que después se cobra**. Sin ese historial no hay número que facturar. No es adquisición de usuarios gratis, es la medición que hace posible el precio.
+- **El acceso de solo lectura después del piloto** no entrega valor nuevo: no hay predicciones nuevas ni recomendaciones nuevas, solo se puede mirar el historial que ya se generó. Su costo marginal es casi cero y evita que alguien pierda su propia información por no haber convertido.
+
+<LinkCard
+	title="Pagos y pricing"
+	href="/producto/pagos-y-pricing/"
+	description="La fórmula de precio completa, el riel de cobro y por qué se eligió."
+/>
