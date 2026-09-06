@@ -14,23 +14,31 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 ## Por dónde empezar
 
 <CardGrid>
-	<Card title="Visión general" icon="open-book">
-		El problema, el cliente, la solución y por qué no la competencia. **Empieza acá si es tu primera vez.**
-	</Card>
-	<Card title="Flujo operativo" icon="setting">
-		Las 4 fases del ciclo diario, de la carga de insumos hasta la recomendación de compra, con ejemplos numéricos.
-	</Card>
-	<Card title="Modelo de negocio" icon="star">
-		El problema en diez palabras, el perfil del cliente, cómo se gana dinero y las tres pruebas que tiene que pasar.
-	</Card>
-	<Card title="Pagos y pricing" icon="analytics">
-		Cómo se cobra (porcentaje del ahorro real medido), cuánto cuesta operar y por qué.
-	</Card>
+	<LinkCard
+		title="Visión general"
+		href="/producto/vision-general/"
+		description="El problema, el cliente, la solución y por qué no la competencia. Empieza acá si es tu primera vez."
+	/>
+	<LinkCard
+		title="Flujo operativo"
+		href="/producto/flujo/"
+		description="Las 4 fases del ciclo diario, de la carga de insumos hasta la recomendación de compra, con ejemplos numéricos."
+	/>
+	<LinkCard
+		title="Modelo de negocio"
+		href="/producto/modelo-de-negocio/"
+		description="El problema en diez palabras, el perfil del cliente, cómo se gana dinero y las tres pruebas que tiene que pasar."
+	/>
+	<LinkCard
+		title="Pagos y pricing"
+		href="/producto/pagos-y-pricing/"
+		description="Cómo se cobra (porcentaje del ahorro real medido), cuánto cuesta operar y por qué."
+	/>
 </CardGrid>
 
 ## Referencia rápida
