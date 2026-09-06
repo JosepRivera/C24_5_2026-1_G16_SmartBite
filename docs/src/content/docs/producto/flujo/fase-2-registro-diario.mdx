@@ -41,8 +41,8 @@ Un porcentaje plano se equivoca en los dos extremos: 50% sobre 3 kg es simple ru
 
 Esto es una **regla de umbral simple**, no un modelo de confianza de machine learning (aprendizaje automático) — deliberadamente simple y explicable. El dueño tiene que poder entender por qué se le preguntó.
 
-<Aside type="note" title="Estacionalidad semanal y la ventana móvil">
-Una ventana móvil de 7 días compara un viernes contra un promedio que incluye martes. En un negocio con estacionalidad semanal fuerte — que es justamente lo que Kilo asume y modela (ver [Fase 3](/producto/flujo/fase-3-prediccion/)) — eso genera falsos positivos sistemáticos los días de mayor volumen. Las dos salidas posibles son usar una **línea base del mismo día de la semana** (comparar viernes contra viernes) o **aceptar una banda más ancha** para absorber la variación semanal. Está pendiente de decidir con datos del piloto cuál de las dos conviene.
+<Aside type="tip" title="Estacionalidad semanal: mismo día contra mismo día">
+Comparar un viernes contra una mediana de 14 días que mezcla martes y viernes genera falsos positivos sistemáticos los días de mayor volumen — justo lo que Kilo asume y modela con estacionalidad semanal (ver [Fase 3](/producto/flujo/fase-3-prediccion/)). La regla usa la pieza que ya existe para resolver esto: una vez que hay al menos **4 muestras del mismo día de la semana** (lo que da el arranque en frío de 28 días), el umbral se calcula contra la **mediana de ese mismo día de la semana**, no contra los 14 días mezclados. Antes de tener esas 4 muestras, se usa la mediana general de 14 días como respaldo — acepta más falsos positivos, pero solo durante el arranque, nunca después.
 </Aside>
 
 ## Estado "borrador" y resiliencia

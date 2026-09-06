@@ -154,7 +154,17 @@ Los tres que realmente importan, en orden de impacto:
 
 2. **La comisión de pago en cobros chicos.** A S/35, la tarjeta cobra **5.36% efectivo** — y ese porcentaje es el costo completo, porque la comisión no lleva IGV encima. Mitigaciones: usar **Yape por defecto** (3.44% plano, sin fee fijo) y ofrecer **cobro trimestral o anual** para amortizar el fee fijo en una sola transacción en vez de tres o doce.
 
-3. **El tamaño del prompt del catálogo.** <Badge text="Por validar en piloto" variant="caution" /> El costo de Claude Haiku se calculó asumiendo **~1,500 tokens de catálogo** en el contexto. Un restaurante con 200 insumos podría empujar el prompt sobre **8,000 tokens** y llevar la extracción de $0.0045 a **~$0.012 por llamada (2.7×)**. Hay que **medir los tokens reales con `messages.count_tokens` sobre tres catálogos de verdad antes de fijar el precio.**
+3. **El tamaño del prompt del catálogo.** <Badge text="Por validar en piloto" variant="caution" /> Se armó un catálogo de ejemplo realista — **80 insumos**, típico de un menú de 15-25 platos criollos con superposición de ingredientes entre platos — para acotar mejor el riesgo sin esperar al piloto. El resultado depende mucho más del **formato** que del tamaño del restaurante:
+
+   | Formato del catálogo en el prompt | Tokens estimados (80 insumos) |
+   |---|---|
+   | Una línea compacta por insumo (`Limón sutil (limón) - kg - verduras`) | **~700-900** |
+   | JSON con claves repetidas por insumo | **~1,600-1,900** |
+   | JSON con indentación (`pretty-printed`) | **~2,200-2,600** |
+
+   El formato compacto de una línea sale **más barato que el supuesto original de 1,500 tokens**, incluso escalado a 200 insumos (~1,900-2,200 tokens, no los 8,000 estimados antes). El JSON indentado, en cambio, casi triplica el costo del mismo catálogo. **Decisión: el catálogo se serializa en el prompt como una línea compacta por insumo, nunca como JSON pretty-printed** — es un control de costo que no depende de tener un piloto corriendo, solo de cómo se arma el prompt.
+
+   Esta estimación usa una aproximación de caracteres por token, no el tokenizador real de Anthropic, y el catálogo es de ejemplo, no de un restaurante real. Sigue pendiente **medir con `messages.count_tokens` sobre tres catálogos de verdad** antes de fijar el precio — pero el rango de incertidumbre ya se achicó bastante.
 
 ## Nota de método
 
@@ -163,6 +173,6 @@ Quedan **dos confirmaciones externas pendientes** antes de lanzar:
 | Pendiente | Por qué importa |
 |---|---|
 | Tratamiento del IGV y del régimen, confirmado por un contador | Vale **15.25% del ingreso**; acá está razonado desde el alcance de los regímenes, no desde una resolución sobre SaaS doméstico |
-| Conteos reales de tokens del catálogo, medidos con `messages.count_tokens` sobre tres catálogos de verdad | Ver riesgo 3 arriba: puede multiplicar por 2.7 el costo de extracción |
+| Conteos reales de tokens del catálogo, medidos con `messages.count_tokens` sobre tres catálogos de verdad | Ver riesgo 3 arriba: un catálogo de ejemplo ya acotó el rango a ~700-2,200 tokens según formato; falta el número exacto con el tokenizador real |
 
 Dos cifras más se apoyan en fuentes secundarias, pero no bloquean nada: el precio de **Render Postgres Basic-1gb** (~$19-20) y el costo de **constituir una SAC** (notaría más SUNARP, comúnmente entre **S/400 y S/1,000**).
