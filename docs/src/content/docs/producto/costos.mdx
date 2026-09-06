@@ -164,7 +164,7 @@ Los tres que realmente importan, en orden de impacto:
 
    El formato compacto de una línea sale **más barato que el supuesto original de 1,500 tokens**, incluso escalado a 200 insumos (~1,900-2,200 tokens, no los 8,000 estimados antes). El JSON indentado, en cambio, casi triplica el costo del mismo catálogo. **Decisión: el catálogo se serializa en el prompt como una línea compacta por insumo, nunca como JSON pretty-printed** — es un control de costo que no depende de tener un piloto corriendo, solo de cómo se arma el prompt.
 
-   Esta estimación usa una aproximación de caracteres por token, no el tokenizador real de Anthropic, y el catálogo es de ejemplo, no de un restaurante real. Sigue pendiente **medir con `messages.count_tokens` sobre tres catálogos de verdad** antes de fijar el precio — pero el rango de incertidumbre ya se achicó bastante.
+   Esta estimación usa una aproximación de caracteres por token, no el tokenizador real de Anthropic, y el catálogo es de ejemplo, no de un restaurante real. El repositorio incluye `scripts/count-catalog-tokens.ts`, listo para correr contra el endpoint gratuito `messages.count_tokens` en cuanto haya una `ANTHROPIC_API_KEY` a mano — falta solo correrlo sobre **tres catálogos de verdad** antes de fijar precio, no ya definir cómo medirlo.
 
 ## Nota de método
 

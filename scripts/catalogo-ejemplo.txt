@@ -1,0 +1,80 @@
+Pollo entero (pollo) - kg - proteínas
+Pechuga de pollo (pechuga) - kg - proteínas
+Carne de res (bistec, lomo) - kg - proteínas
+Lomo fino (lomo) - kg - proteínas
+Pescado bonito (bonito, pescado) - kg - proteínas
+Pescado perico (perico) - kg - proteínas
+Filete de tilapia (tilapia) - kg - proteínas
+Camarones (camarón) - kg - proteínas
+Conchas de abanico (conchas) - kg - proteínas
+Pulpo - kg - proteínas
+Calamar (pota) - kg - proteínas
+Chicharrón de cerdo (chicharrón) - kg - proteínas
+Panceta de cerdo (panceta) - kg - proteínas
+Costilla de cerdo (costilla) - kg - proteínas
+Hígado de pollo (hígado) - kg - proteínas
+Mollejitas (mollejas) - kg - proteínas
+Huevo - unidad - proteínas
+Papa amarilla (papa) - kg - verduras y frutas
+Papa canchán (papa blanca) - kg - verduras y frutas
+Camote - kg - verduras y frutas
+Yuca - kg - verduras y frutas
+Cebolla roja (cebolla) - kg - verduras y frutas
+Cebolla china - atado - verduras y frutas
+Tomate - kg - verduras y frutas
+Limón sutil (limón) - kg - verduras y frutas
+Ají amarillo - kg - verduras y frutas
+Ají limo - kg - verduras y frutas
+Rocoto - kg - verduras y frutas
+Zanahoria - kg - verduras y frutas
+Vainita - kg - verduras y frutas
+Choclo - unidad - verduras y frutas
+Zapallo - kg - verduras y frutas
+Palta - unidad - verduras y frutas
+Lechuga - unidad - verduras y frutas
+Culantro (cilantro) - atado - verduras y frutas
+Perejil - atado - verduras y frutas
+Apio - atado - verduras y frutas
+Poro - atado - verduras y frutas
+Pepino - kg - verduras y frutas
+Beterraga - kg - verduras y frutas
+Espinaca - atado - verduras y frutas
+Plátano de la isla (plátano) - kg - verduras y frutas
+Piña - unidad - verduras y frutas
+Arroz - kg - granos y abarrotes
+Fideos (tallarín) - kg - granos y abarrotes
+Frijol canario (frijol) - kg - granos y abarrotes
+Lentejas - kg - granos y abarrotes
+Garbanzo - kg - granos y abarrotes
+Pan francés (pan) - unidad - panadería
+Harina - kg - granos y abarrotes
+Azúcar - kg - granos y abarrotes
+Sal - kg - condimentos y especias
+Comino - kg - condimentos y especias
+Ajo - kg - condimentos y especias
+Ají panca (panca) - kg - condimentos y especias
+Pimienta - kg - condimentos y especias
+Kion (jengibre) - kg - condimentos y especias
+Sillao (sillao de soya) - litro - condimentos y especias
+Vinagre - litro - condimentos y especias
+Sazonador (ajinomoto) - kg - condimentos y especias
+Orégano - kg - condimentos y especias
+Aceite vegetal (aceite) - litro - condimentos y especias
+Aceite de oliva - litro - condimentos y especias
+Mostaza - kg - condimentos y especias
+Mayonesa - kg - condimentos y especias
+Kétchup - kg - condimentos y especias
+Leche evaporada (leche) - lata - lácteos
+Leche fresca - litro - lácteos
+Queso fresco (queso) - kg - lácteos
+Mantequilla - kg - lácteos
+Crema de leche (crema) - litro - lácteos
+Yogurt - litro - lácteos
+Gaseosa (inca kola, coca cola) - unidad - bebidas
+Agua mineral (agua) - unidad - bebidas
+Cerveza - unidad - bebidas
+Chicha morada (chicha) - litro - bebidas
+Maracuyá - kg - bebidas
+Café - kg - bebidas
+Pan de molde - unidad - panadería
+Galletas - paquete - panadería
