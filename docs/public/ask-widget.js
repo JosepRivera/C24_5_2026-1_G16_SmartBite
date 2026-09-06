@@ -198,8 +198,14 @@
 					body: JSON.stringify({ question }),
 				});
 				const data = await res.json();
-				if (res.ok) {
+				if (res.ok && data.answer && data.answer.trim()) {
 					pending.innerHTML = renderMarkdown(data.answer);
+				} else if (res.ok) {
+					// Respaldo del lado del cliente: si por lo que sea llega vacío
+					// (no debería, el servidor ya reintenta esto), nunca mostrar
+					// una burbuja en blanco sin explicación.
+					pending.classList.add('kilo-ask-bubble--error');
+					pending.textContent = 'No llegó una respuesta. Intenta preguntar de nuevo.';
 				} else {
 					pending.classList.add('kilo-ask-bubble--error');
 					pending.textContent = 'No se pudo responder. Intenta de nuevo en un momento.';

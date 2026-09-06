@@ -59,6 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
 Reglas de contenido:
 - Responde ÚNICAMENTE con información que aparece textualmente en la documentación de abajo. No agregues supuestos, prácticas genéricas de la industria, ni información de otras fuentes.
 - Si la pregunta no se puede responder con esta documentación, dilo explícitamente ("Eso no está definido en la documentación") en vez de inventar o completar con conocimiento externo.
+- Cuidado con una confusión común: si la pregunta usa frases como "más allá del documento", "aparte de lo que dice", "fuera de la documentación" pero el TEMA de la pregunta sí aparece en la documentación (ej. "Holt-Winters", "IGV"), esas frases no significan que debas rechazar — significan que te están pidiendo la excepción 2 (explicar el concepto general). Rechaza solo cuando el tema en sí no tiene relación con nada de la documentación.
 - Excepción explícita 1 — ejemplos: si te piden un EJEMPLO de cómo funciona un mecanismo que SÍ está documentado (ej. "dame un ejemplo distinto de cómo predice el motor"), sí puedes construir un ejemplo nuevo — con un restaurante y números inventados — siempre que aplique correctamente la regla, fórmula o mecanismo real descrito en la documentación. Esto no es inventar información de Kilo, es ilustrar una regla real con datos de ejemplo, igual que ya hace la propia documentación con "El Buen Sazón" y "La Cusqueñita". Deja siempre claro que es un ejemplo hipotético, no un caso real de la plataforma.
 - Excepción explícita 2 — conceptos generales: si la documentación NOMBRA un término o concepto general sin explicarlo a fondo (ej. "Holt-Winters", "suavizamiento exponencial", "IGV"), sí puedes usar tu conocimiento general para explicar ESE concepto con más profundidad — es lo mismo que ya hace la documentación al glosar términos entre paréntesis, solo que más extenso. La línea que nunca se cruza: tu conocimiento general puede explicar QUÉ ES un concepto, pero nunca puede afirmar CÓMO LO USA KILO específicamente, ni sus números, decisiones o diseño — eso sale solo de la documentación. Si la pregunta no menciona ni se relaciona con ningún concepto de la documentación (ej. temas de otro curso, cultura general), sigue aplicando la regla 1: no está definido acá.
 
@@ -75,34 +76,50 @@ Documentación completa de Kilo:
 ${corpus}
 """`;
 
-	const groqRes = await fetch(GROQ_URL, {
-		method: 'POST',
-		headers: {
-			'content-type': 'application/json',
-			authorization: `Bearer ${apiKey}`,
-		},
-		body: JSON.stringify({
-			model: MODEL,
-			temperature: 0.2,
-			max_tokens: 600,
-			messages: [
-				{ role: 'system', content: systemPrompt },
-				{ role: 'user', content: question },
-			],
-		}),
-	});
-
-	if (!groqRes.ok) {
-		const errText = await groqRes.text();
-		return json({ error: `Groq respondió ${groqRes.status}: ${errText.slice(0, 300)}` }, 502);
+	async function callGroq(): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+		const res = await fetch(GROQ_URL, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				authorization: `Bearer ${apiKey}`,
+			},
+			body: JSON.stringify({
+				model: MODEL,
+				temperature: 0.2,
+				max_tokens: 600,
+				messages: [
+					{ role: 'system', content: systemPrompt },
+					{ role: 'user', content: question },
+				],
+			}),
+		});
+		if (!res.ok) {
+			const errText = await res.text();
+			return { ok: false, error: `Groq respondió ${res.status}: ${errText.slice(0, 300)}` };
+		}
+		const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+		return { ok: true, text: data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.' };
 	}
 
-	const data = (await groqRes.json()) as {
-		choices?: { message?: { content?: string } }[];
-	};
+	let result = await callGroq();
+	// Un modelo chico ocasionalmente corta la respuesta en algo casi vacío
+	// (variación normal de muestreo, no un error de la API). El mensaje de
+	// rechazo real mide ~40 caracteres, así que una respuesta más corta que
+	// eso probablemente sea degenerada, no una respuesta corta legítima.
+	if (result.ok && result.text.length < 25) {
+		result = await callGroq();
+	}
+
+	if (!result.ok) {
+		return json({ error: result.error }, 502);
+	}
+
 	// El campo "answer" es texto en markdown (no HTML) — el cliente lo renderiza
 	// con un conversor propio chico (ver ask-widget.js), no un parser completo.
-	const answer = data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.';
+	let answer = result.text;
+	if (answer.includes('no está definido en la documentación')) {
+		answer += '\n\nSi crees que sí debería estar, prueba reformular la pregunta enfocándola directamente en el tema — frases como "fuera de la documentación" o "más allá del documento" a veces confunden al asistente.';
+	}
 
 	return json({ answer });
 };
