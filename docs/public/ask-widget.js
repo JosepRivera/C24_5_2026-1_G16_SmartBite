@@ -173,10 +173,13 @@
 		input.addEventListener('input', resizeInput);
 
 		// Enter envía, Shift+Enter hace un salto de línea (igual que cualquier chat).
+		// form.requestSubmit() ignora que el botón esté disabled, así que sin este
+		// chequeo Enter repetido mientras ya hay una pregunta en curso mandaba
+		// varias peticiones en paralelo (preguntas partidas, errores cruzados).
 		input.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
-				form.requestSubmit();
+				if (!submitBtn.disabled) form.requestSubmit();
 			}
 		});
 
@@ -213,6 +216,7 @@
 
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
+			if (submitBtn.disabled) return; // ya hay una pregunta en curso
 			const question = input.value.trim();
 			if (!question) return;
 

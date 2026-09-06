@@ -134,6 +134,13 @@
 	font-size: var(--sl-text-sm);
 	line-height: 1.55;
 	overflow-x: auto; /* si algo adentro (una tabla ancha) no cabe, scrollea la burbuja, no el panel */
+	/* Trampa de CSS: fijar solo overflow-x hace que overflow-y calcule a "auto"
+	   también (regla del spec: si un eje no es "visible" el otro deja de serlo).
+	   Eso + ser hijo de un flex column con min-height:auto hacía que la propia
+	   burbuja se encogiera y scrolleara por dentro en vez de crecer y dejar
+	   scrollear al panel. Los dos, explícitos, lo evitan. */
+	overflow-y: visible;
+	flex-shrink: 0;
 }
 
 .kilo-ask-bubble--user {
@@ -154,6 +161,7 @@
 	color: var(--sl-color-gray-1);
 	font-size: var(--sl-text-sm);
 	line-height: 1.55;
+	flex-shrink: 0; /* mismo motivo que en .kilo-ask-bubble — no debe encogerse ni scrollear solo */
 }
 
 .kilo-ask-block p {
@@ -173,6 +181,7 @@
 	background-color: var(--sl-color-gray-6);
 	border: 1px solid var(--sl-color-gray-5);
 	overflow-x: auto;
+	overflow-y: visible; /* mismo motivo que en .kilo-ask-bubble */
 }
 .kilo-ask-block pre code {
 	background: none;
@@ -196,6 +205,7 @@
 }
 .kilo-ask-table-wrap {
 	overflow-x: auto; /* la tabla scrollea horizontal si no cabe, el bloque no */
+	overflow-y: visible; /* mismo motivo que en .kilo-ask-bubble */
 	margin: 0 0 0.6rem;
 }
 .kilo-ask-block table {
