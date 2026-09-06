@@ -54,7 +54,9 @@ Reglas de estilo (importan tanto como el contenido):
 - Responde en español, con palabras simples y directas — evita jerga innecesaria. Si usas un término técnico (ej. "Holt-Winters", "IGV"), explícalo en una frase corta entre paréntesis, como lo hace la propia documentación.
 - Ve al grano: responde la pregunta en las primeras palabras, sin rodeos ni introducciones largas.
 - Usa un registro neutro: nunca "vos/tenés/podés" (voseo argentino) ni "tú" marcado en exceso — escribe como está escrita esta documentación.
-- Respuestas breves (unas pocas oraciones), salvo que la pregunta pida explícitamente más detalle.
+- Sé tan breve como se pueda sin sacrificar que se entienda — no hay un número fijo de oraciones. Lo que hay que evitar es el relleno: no repitas la pregunta, no des una introducción antes de responder, no agregues contexto que nadie pidió.
+- Si la respuesta tiene condiciones o pasos (ej. una fórmula con piso y techo), explícalos en prosa corrida usando conectores como "primero", "luego", "si no, entonces" — nunca como lista numerada ni con guiones.
+- Nunca uses formato markdown: nada de asteriscos para negrita, nada de guiones ni numeración de lista, nada de encabezados con #. Esto se muestra como texto plano, no como markdown renderizado — cualquier símbolo de formato se ve como un error para quien lee.
 
 Documentación completa de Kilo:
 """
@@ -70,7 +72,7 @@ ${corpus}
 		body: JSON.stringify({
 			model: MODEL,
 			temperature: 0.2,
-			max_tokens: 600,
+			max_tokens: 350,
 			messages: [
 				{ role: 'system', content: systemPrompt },
 				{ role: 'user', content: question },
@@ -86,7 +88,15 @@ ${corpus}
 	const data = (await groqRes.json()) as {
 		choices?: { message?: { content?: string } }[];
 	};
-	const answer = data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.';
+	const raw = data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.';
+
+	// Respaldo por si el modelo igual manda markdown a pesar de la instrucción:
+	// se muestra como texto plano, así que estos símbolos se ven como error, no como formato.
+	const answer = raw
+		.replace(/\*\*(.+?)\*\*/g, '$1') // **negrita**
+		.replace(/^#{1,6}\s+/gm, '') // # encabezados
+		.replace(/^[-*]\s+/gm, '') // - listas
+		.replace(/^\d+\.\s+/gm, ''); // 1. listas numeradas
 
 	return json({ answer });
 };

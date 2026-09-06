@@ -4,6 +4,9 @@
 (function () {
 	const CHAT_ICON =
 		'<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12a9.9 9.9 0 0 0 2.3 6.3l-2 2a1 1 0 0 0-.3 1.1 1 1 0 0 0 1 .6h9a10 10 0 0 0 0-20m0 18H5.4l1-1a1 1 0 0 0 0-1.3A8 8 0 1 1 12 20"/></svg>';
+	// Mismo ícono de flecha que ya usa el botón del hero — no uno nuevo inventado.
+	const SEND_ICON =
+		'<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.92 11.62a1.001 1.001 0 0 0-.21-.33l-5-5a1.003 1.003 0 1 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1.002 1.002 0 0 0 .325 1.639 1 1 0 0 0 1.095-.219l5-5a1 1 0 0 0 .21-.33 1 1 0 0 0 0-.76Z"/></svg>';
 
 	const SUGGESTIONS = [
 		'¿Cómo se calcula el precio mensual?',
@@ -35,12 +38,12 @@
 				<button id="kilo-ask-close" type="button" aria-label="Cerrar">&times;</button>
 			</div>
 			<div id="kilo-ask-messages">
-				<p id="kilo-ask-intro">Responde solo con lo que está escrito en la documentación de Kilo, sin agregar nada externo.</p>
+				<p id="kilo-ask-intro">Pregunta lo que quieras sobre Kilo. Las respuestas se basan en esta documentación.</p>
 				<div id="kilo-ask-suggestions"></div>
 			</div>
 			<form id="kilo-ask-form">
 				<input id="kilo-ask-input" type="text" placeholder="Escribe tu pregunta..." autocomplete="off" />
-				<button id="kilo-ask-submit" type="submit" aria-label="Preguntar">${CHAT_ICON}</button>
+				<button id="kilo-ask-submit" type="submit" aria-label="Preguntar">${SEND_ICON}</button>
 			</form>
 		`;
 
