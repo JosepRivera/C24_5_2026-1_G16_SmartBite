@@ -56,7 +56,7 @@
 					const rows = lines.slice(2).map(toCells);
 					const thead = `<tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr>`;
 					const tbody = rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('');
-					return `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+					return `<div class="kilo-ask-table-wrap"><table><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>`;
 				}
 
 				// Encabezado (# a ######): se muestra resaltado, no como <h1>-<h6>
@@ -199,10 +199,13 @@
 				.map((c) => c.trim())
 				.filter((c) => c !== '');
 			for (const chunk of chunks) {
-				const bubble = document.createElement('div');
-				bubble.className = 'kilo-ask-bubble kilo-ask-bubble--assistant';
-				bubble.innerHTML = renderMarkdownChunk(chunk);
-				messagesEl.append(bubble);
+				// Sin burbuja: la respuesta real va a todo el ancho, como Claude.ai.
+				// La burbuja chica de .kilo-ask-bubble--assistant se reserva para
+				// estados cortos ("Pensando...", errores).
+				const block = document.createElement('div');
+				block.className = 'kilo-ask-block';
+				block.innerHTML = renderMarkdownChunk(chunk);
+				messagesEl.append(block);
 				messagesEl.scrollTop = messagesEl.scrollHeight;
 				if (chunks.length > 1) await new Promise((r) => setTimeout(r, 220));
 			}

@@ -92,7 +92,7 @@ ${corpus}
 			body: JSON.stringify({
 				model: MODEL,
 				temperature: 0.2,
-				max_tokens: 600,
+				max_tokens: 1000,
 				messages: [
 					{ role: 'system', content: systemPrompt },
 					{ role: 'user', content: question },

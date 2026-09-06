@@ -94,11 +94,9 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0.75rem;
-	/* Patrón "Temple" de Hero Patterns (heropatterns.com) por Steve Schoger,
-	   CC BY 4.0 — no es el patrón de WhatsApp (propiedad de su marca), es un
-	   diseño real y gratuito, recoloreado en gris neutro y muy atenuado para
-	   que no compita con el texto en ninguno de los dos temas. */
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='152' height='152' viewBox='0 0 152 152'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23888888' fill-opacity='0.12'%3E%3Cpath d='M152 150v2H0v-2h28v-8H8v-20H0v-2h8V80h42v20h20v42H30v8h90v-8H80v-42h20V80h42v40h8V30h-8v40h-42V50H80V8h40V0h2v8h20v20h8V0h2v150zm-2 0v-28h-8v20h-20v8h28zM82 30v18h18V30H82zm20 18h20v20h18V30h-20V10H82v18h20v20zm0 2v18h18V50h-18zm20-22h18V10h-18v18zm-54 92v-18H50v18h18zm-20-18H28V82H10v38h20v20h38v-18H48v-20zm0-2V82H30v18h18zm-20 22H10v18h18v-18zm54 0v18h38v-20h20V82h-18v20h-20v20H82zm18-20H82v18h18v-18zm2-2h18V82h-18v18zm20 40v-18h18v18h-18zM30 0h-2v8H8v20H0v2h8v40h42V50h20V8H30V0zm20 48h18V30H50v18zm18-20H48v20H28v20H10V30h20V10h38v18zM30 50h18v18H30V50zm-2-40H10v18h18V10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+	/* Sin patrón de fondo: cuando la respuesta ya no va en burbuja, el fondo
+	   decorativo se ve encima del texto, no detrás de una burbuja — estorba
+	   más de lo que aporta. */
 }
 
 #kilo-ask-intro {
@@ -146,67 +144,74 @@
 	white-space: pre-wrap; /* acá el texto sigue siendo plano, con saltos de línea reales */
 }
 
-.kilo-ask-bubble--assistant {
-	align-self: flex-start;
-	background-color: var(--sl-color-gray-6);
+/* Respuesta real del asistente: sin burbuja, a todo el ancho, como Claude.ai —
+   "Pensando..." y los errores siguen usando .kilo-ask-bubble--assistant (una
+   burbuja chica sí tiene sentido para un estado corto, no para una respuesta
+   larga con formato). */
+.kilo-ask-block {
+	align-self: stretch;
+	max-width: 100%;
 	color: var(--sl-color-gray-1);
-	border-bottom-left-radius: 0.15rem;
+	font-size: var(--sl-text-sm);
+	line-height: 1.55;
 }
 
-/* Markdown renderizado dentro de una respuesta del asistente */
-.kilo-ask-bubble--assistant p {
+.kilo-ask-block p {
 	margin: 0 0 0.6rem;
 }
-.kilo-ask-bubble--assistant p:last-child {
+.kilo-ask-block p:last-child {
 	margin-bottom: 0;
 }
-.kilo-ask-bubble--assistant .kilo-ask-heading {
+.kilo-ask-block .kilo-ask-heading {
 	font-weight: 600;
 	color: var(--sl-color-white);
 }
-.kilo-ask-bubble--assistant pre {
+.kilo-ask-block pre {
 	margin: 0 0 0.6rem;
 	padding: 0.6rem 0.75rem;
 	border-radius: 0.5rem;
-	background-color: var(--sl-color-black);
+	background-color: var(--sl-color-gray-6);
 	border: 1px solid var(--sl-color-gray-5);
 	overflow-x: auto;
 }
-.kilo-ask-bubble--assistant pre code {
+.kilo-ask-block pre code {
 	background: none;
 	padding: 0;
 	font-family: var(--__sl-font-mono, monospace);
 	white-space: pre;
 }
-.kilo-ask-bubble--assistant code {
-	background-color: var(--sl-color-black);
+.kilo-ask-block code {
+	background-color: var(--sl-color-gray-6);
 	border-radius: 0.25rem;
 	padding: 0.1rem 0.35rem;
 	font-size: 0.9em;
 }
-.kilo-ask-bubble--assistant ul,
-.kilo-ask-bubble--assistant ol {
+.kilo-ask-block ul,
+.kilo-ask-block ol {
 	margin: 0 0 0.6rem;
 	padding-left: 1.25rem;
 }
-.kilo-ask-bubble--assistant li {
+.kilo-ask-block li {
 	margin-bottom: 0.25rem;
 }
-.kilo-ask-bubble--assistant table {
+.kilo-ask-table-wrap {
+	overflow-x: auto; /* la tabla scrollea horizontal si no cabe, el bloque no */
+	margin: 0 0 0.6rem;
+}
+.kilo-ask-block table {
 	border-collapse: collapse;
 	width: 100%;
-	margin: 0 0 0.6rem;
 	font-size: 0.95em;
 }
-.kilo-ask-bubble--assistant th,
-.kilo-ask-bubble--assistant td {
+.kilo-ask-block th,
+.kilo-ask-block td {
 	border: 1px solid var(--sl-color-gray-5);
 	padding: 0.4rem 0.55rem;
 	text-align: left;
 	/* sin nowrap: una celda con texto largo (una descripción, no solo un
 	   número) debe envolver, no forzar toda la tabla a ensancharse */
 }
-.kilo-ask-bubble--assistant th {
+.kilo-ask-block th {
 	color: var(--sl-color-white);
 	font-weight: 600;
 }
