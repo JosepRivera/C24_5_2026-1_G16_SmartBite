@@ -3,12 +3,20 @@ import starlight from '@astrojs/starlight';
 import starlightThemeNova from 'starlight-theme-nova';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightPageContextAction from 'starlight-page-context-action';
+import vercel from '@astrojs/vercel';
 
 export default defineConfig({
 	site: 'https://kilo-docs-mu.vercel.app',
+	// El sitio se sigue generando estático (cada página HTML se prerenderiza).
+	// Solo /api/ask.ts pide `prerender = false` para correr como función serverless.
+	adapter: vercel(),
 	integrations: [
 		starlight({
 			title: 'Kilo Docs',
+			head: [
+				{ tag: 'link', attrs: { rel: 'stylesheet', href: '/ask-widget.css' } },
+				{ tag: 'script', attrs: { src: '/ask-widget.js', defer: true } },
+			],
 			plugins: [
 				starlightThemeNova(),
 				starlightLlmsTxt(),

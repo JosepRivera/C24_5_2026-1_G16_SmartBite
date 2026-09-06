@@ -1,0 +1,115 @@
+#kilo-ask-button {
+	position: fixed;
+	bottom: 1.25rem;
+	right: 1.25rem;
+	z-index: 100;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 999px;
+	border: 1px solid var(--sl-color-gray-5);
+	background-color: var(--sl-color-accent);
+	color: var(--sl-color-white);
+	cursor: pointer;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+#kilo-ask-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 200;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5rem;
+	background-color: rgba(0, 0, 0, 0.6);
+}
+
+#kilo-ask-modal {
+	width: min(480px, 100%);
+	max-height: min(560px, 100%);
+	display: flex;
+	flex-direction: column;
+	border-radius: 0.75rem;
+	border: 1px solid var(--sl-color-gray-5);
+	background-color: var(--sl-color-black);
+	box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+	overflow: hidden;
+}
+
+#kilo-ask-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1rem 1.25rem;
+	border-bottom: 1px solid var(--sl-color-gray-5);
+	color: var(--sl-color-white);
+	font-weight: 600;
+}
+
+#kilo-ask-header span {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+#kilo-ask-header svg {
+	width: 1.1em;
+	height: 1.1em;
+	flex-shrink: 0;
+}
+
+#kilo-ask-close {
+	background: none;
+	border: none;
+	color: var(--sl-color-gray-2);
+	font-size: 1.5rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+#kilo-ask-answer {
+	padding: 1rem 1.25rem;
+	color: var(--sl-color-gray-2);
+	font-size: var(--sl-text-sm);
+	line-height: 1.6;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	flex: 1;
+}
+
+#kilo-ask-form {
+	display: flex;
+	gap: 0.6rem;
+	padding: 1rem 1.25rem;
+	border-top: 1px solid var(--sl-color-gray-5);
+}
+
+#kilo-ask-input {
+	flex: 1;
+	min-width: 0;
+	padding: 0.6rem 0.75rem;
+	border-radius: 0.4rem;
+	border: 1px solid var(--sl-color-gray-5);
+	background-color: var(--sl-color-gray-6);
+	color: var(--sl-color-white);
+	font-size: var(--sl-text-sm);
+}
+
+#kilo-ask-submit {
+	padding: 0.6rem 1rem;
+	border-radius: 0.4rem;
+	border: none;
+	background-color: var(--sl-color-accent);
+	color: var(--sl-color-white);
+	font-size: var(--sl-text-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+#kilo-ask-submit:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
