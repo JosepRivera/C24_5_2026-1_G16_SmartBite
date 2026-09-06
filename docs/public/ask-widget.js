@@ -42,7 +42,7 @@
 				<div id="kilo-ask-suggestions"></div>
 			</div>
 			<form id="kilo-ask-form">
-				<input id="kilo-ask-input" type="text" placeholder="Escribe tu pregunta..." autocomplete="off" />
+				<textarea id="kilo-ask-input" rows="1" placeholder="Escribe tu pregunta..." autocomplete="off"></textarea>
 				<button id="kilo-ask-submit" type="submit" aria-label="Preguntar">${SEND_ICON}</button>
 			</form>
 		`;
@@ -88,6 +88,22 @@
 			if (e.key === 'Escape' && !panel.hidden) closePanel();
 		});
 
+		// Textarea que crece con el contenido, hasta el tope que define el CSS
+		// (después scrollea adentro, como cualquier chat).
+		function resizeInput() {
+			input.style.height = 'auto';
+			input.style.height = `${input.scrollHeight}px`;
+		}
+		input.addEventListener('input', resizeInput);
+
+		// Enter envía, Shift+Enter hace un salto de línea (igual que cualquier chat).
+		input.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				form.requestSubmit();
+			}
+		});
+
 		function addBubble(role, text) {
 			const bubble = document.createElement('div');
 			bubble.className = `kilo-ask-bubble kilo-ask-bubble--${role}`;
@@ -105,6 +121,7 @@
 			suggestionsEl.remove();
 			addBubble('user', question);
 			input.value = '';
+			resizeInput();
 			submitBtn.disabled = true;
 			const pending = addBubble('assistant', 'Pensando...');
 

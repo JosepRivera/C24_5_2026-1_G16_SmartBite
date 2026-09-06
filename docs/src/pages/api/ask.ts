@@ -24,7 +24,17 @@ async function buildCorpus(): Promise<string> {
 	return cachedCorpus;
 }
 
+// Sitios permitidos a llamar este endpoint. No es a prueba de balas (alguien
+// con curl puede falsificar el header Origin), pero corta en seco el abuso
+// casual y el que un tercero use nuestra key desde su propio sitio.
+const ALLOWED_ORIGINS = ['https://kilo-docs-mu.vercel.app', 'http://localhost:4321'];
+
 export const POST: APIRoute = async ({ request }) => {
+	const origin = request.headers.get('origin');
+	if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+		return json({ error: 'Origen no permitido.' }, 403);
+	}
+
 	const apiKey = import.meta.env.GROQ_API_KEY ?? process.env.GROQ_API_KEY;
 	if (!apiKey) {
 		return json({ error: 'Falta GROQ_API_KEY en el servidor.' }, 500);
@@ -49,6 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
 Reglas de contenido:
 - Responde ÚNICAMENTE con información que aparece textualmente en la documentación de abajo. No agregues supuestos, prácticas genéricas de la industria, ni información de otras fuentes.
 - Si la pregunta no se puede responder con esta documentación, dilo explícitamente ("Eso no está definido en la documentación") en vez de inventar o completar con conocimiento externo.
+- Excepción explícita: si te piden un EJEMPLO de cómo funciona un mecanismo que SÍ está documentado (ej. "dame un ejemplo distinto de cómo predice el motor"), sí puedes construir un ejemplo nuevo — con un restaurante y números inventados — siempre que aplique correctamente la regla, fórmula o mecanismo real descrito en la documentación. Esto no es inventar información de Kilo, es ilustrar una regla real con datos de ejemplo, igual que ya hace la propia documentación con "El Buen Sazón" y "La Cusqueñita". Deja siempre claro que es un ejemplo hipotético, no un caso real de la plataforma.
 
 Reglas de estilo (importan tanto como el contenido):
 - Responde en español, con palabras simples y directas — evita jerga innecesaria. Si usas un término técnico (ej. "Holt-Winters", "IGV"), explícalo en una frase corta entre paréntesis, como lo hace la propia documentación.
@@ -72,7 +83,7 @@ ${corpus}
 		body: JSON.stringify({
 			model: MODEL,
 			temperature: 0.2,
-			max_tokens: 350,
+			max_tokens: 600,
 			messages: [
 				{ role: 'system', content: systemPrompt },
 				{ role: 'user', content: question },
