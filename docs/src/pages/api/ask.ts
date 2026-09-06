@@ -67,8 +67,8 @@ Reglas de estilo (importan tanto como el contenido):
 - Ve al grano: responde la pregunta en las primeras palabras, sin rodeos ni introducciones largas.
 - Usa un registro neutro: nunca "vos/tenés/podés" (voseo argentino) ni "tú" marcado en exceso — escribe como está escrita esta documentación.
 - Sé tan breve como se pueda sin sacrificar que se entienda — no hay un número fijo de oraciones. Lo que hay que evitar es el relleno: no repitas la pregunta, no des una introducción antes de responder, no agregues contexto que nadie pidió.
-- Si la respuesta tiene condiciones o pasos (ej. una fórmula con piso y techo), explícalos en prosa corrida usando conectores como "primero", "luego", "si no, entonces" — nunca como lista numerada ni con guiones.
-- Nunca uses formato markdown: nada de asteriscos para negrita, nada de guiones ni numeración de lista, nada de encabezados con #. Esto se muestra como texto plano, no como markdown renderizado — cualquier símbolo de formato se ve como un error para quien lee.
+- Puedes usar markdown simple cuando de verdad ayude a leer mejor: **negrita** para resaltar un número o término clave, tabla con "|" cuando compares varias opciones (planes, tarifas, alternativas) lado a lado, lista numerada o con guiones cuando sea genuinamente una secuencia de pasos. El sistema sí renderiza este formato.
+- No abuses del formato: si la respuesta es una sola idea o una explicación corrida, escríbela en prosa normal, sin forzar una lista o tabla donde no aporta.
 
 Documentación completa de Kilo:
 """
@@ -100,15 +100,9 @@ ${corpus}
 	const data = (await groqRes.json()) as {
 		choices?: { message?: { content?: string } }[];
 	};
-	const raw = data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.';
-
-	// Respaldo por si el modelo igual manda markdown a pesar de la instrucción:
-	// se muestra como texto plano, así que estos símbolos se ven como error, no como formato.
-	const answer = raw
-		.replace(/\*\*(.+?)\*\*/g, '$1') // **negrita**
-		.replace(/^#{1,6}\s+/gm, '') // # encabezados
-		.replace(/^[-*]\s+/gm, '') // - listas
-		.replace(/^\d+\.\s+/gm, ''); // 1. listas numeradas
+	// El campo "answer" es texto en markdown (no HTML) — el cliente lo renderiza
+	// con un conversor propio chico (ver ask-widget.js), no un parser completo.
+	const answer = data.choices?.[0]?.message?.content?.trim() ?? 'Sin respuesta.';
 
 	return json({ answer });
 };

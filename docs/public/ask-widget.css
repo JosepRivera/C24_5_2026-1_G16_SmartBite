@@ -130,7 +130,7 @@
 	border-radius: 0.65rem;
 	font-size: var(--sl-text-sm);
 	line-height: 1.55;
-	white-space: pre-wrap;
+	overflow-x: auto; /* si algo adentro (una tabla ancha) no cabe, scrollea la burbuja, no el panel */
 }
 
 .kilo-ask-bubble--user {
@@ -138,6 +138,7 @@
 	background-color: var(--sl-color-accent);
 	color: #fff; /* fijo — ver nota en #kilo-ask-button */
 	border-bottom-right-radius: 0.15rem;
+	white-space: pre-wrap; /* acá el texto sigue siendo plano, con saltos de línea reales */
 }
 
 .kilo-ask-bubble--assistant {
@@ -145,6 +146,49 @@
 	background-color: var(--sl-color-gray-6);
 	color: var(--sl-color-gray-1);
 	border-bottom-left-radius: 0.15rem;
+}
+
+/* Markdown renderizado dentro de una respuesta del asistente */
+.kilo-ask-bubble--assistant p {
+	margin: 0 0 0.6rem;
+}
+.kilo-ask-bubble--assistant p:last-child {
+	margin-bottom: 0;
+}
+.kilo-ask-bubble--assistant .kilo-ask-heading {
+	font-weight: 600;
+	color: var(--sl-color-white);
+}
+.kilo-ask-bubble--assistant code {
+	background-color: var(--sl-color-black);
+	border-radius: 0.25rem;
+	padding: 0.1rem 0.35rem;
+	font-size: 0.9em;
+}
+.kilo-ask-bubble--assistant ul,
+.kilo-ask-bubble--assistant ol {
+	margin: 0 0 0.6rem;
+	padding-left: 1.25rem;
+}
+.kilo-ask-bubble--assistant li {
+	margin-bottom: 0.25rem;
+}
+.kilo-ask-bubble--assistant table {
+	border-collapse: collapse;
+	width: 100%;
+	margin: 0 0 0.6rem;
+	font-size: 0.95em;
+}
+.kilo-ask-bubble--assistant th,
+.kilo-ask-bubble--assistant td {
+	border: 1px solid var(--sl-color-gray-5);
+	padding: 0.4rem 0.55rem;
+	text-align: left;
+	white-space: nowrap;
+}
+.kilo-ask-bubble--assistant th {
+	color: var(--sl-color-white);
+	font-weight: 600;
 }
 
 .kilo-ask-bubble--error {
@@ -165,6 +209,7 @@
 #kilo-ask-input {
 	flex: 1;
 	min-width: 0;
+	box-sizing: border-box; /* si no, el padding se suma aparte del alto calculado en JS y scrollea antes de tiempo */
 	max-height: 8.5rem;
 	padding: 0.6rem 0.9rem;
 	border-radius: 1.1rem;

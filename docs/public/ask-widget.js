@@ -8,6 +8,65 @@
 	const SEND_ICON =
 		'<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.92 11.62a1.001 1.001 0 0 0-.21-.33l-5-5a1.003 1.003 0 1 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1.002 1.002 0 0 0 .325 1.639 1 1 0 0 0 1.095-.219l5-5a1 1 0 0 0 .21-.33 1 1 0 0 0 0-.76Z"/></svg>';
 
+	// Conversor de markdown a HTML chico y sin dependencias: cubre lo que el
+	// modelo realmente devuelve (párrafos, **negrita**, listas, tablas).
+	// No es un parser completo de markdown, es suficiente para el caso de uso.
+	function escapeHtml(s) {
+		const div = document.createElement('div');
+		div.textContent = s;
+		return div.innerHTML;
+	}
+
+	function inline(text) {
+		return escapeHtml(text)
+			.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+			.replace(/`(.+?)`/g, '<code>$1</code>')
+			.replace(/&lt;br\s*\/?&gt;/gi, '<br>'); // <br> dentro de una celda de tabla: la única etiqueta HTML que se deja pasar, sin atributos, no es un riesgo
+	}
+
+	function renderMarkdown(markdown) {
+		const blocks = markdown.trim().split(/\n{2,}/);
+		return blocks
+			.map((block) => {
+				const lines = block.split('\n').filter((l) => l.trim() !== '');
+				if (lines.length === 0) return '';
+
+				// Tabla: línea con "|" seguida de una fila separadora "|---|---|".
+				if (lines.length >= 2 && lines[0].includes('|') && /^\s*\|?\s*:?-{2,}/.test(lines[1])) {
+					const toCells = (line) =>
+						line
+							.trim()
+							.replace(/^\||\|$/g, '')
+							.split('|')
+							.map((c) => c.trim());
+					const head = toCells(lines[0]);
+					const rows = lines.slice(2).map(toCells);
+					const thead = `<tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr>`;
+					const tbody = rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('');
+					return `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+				}
+
+				// Encabezado (# a ######): se muestra resaltado, no como <h1>-<h6>
+				// reales — dentro de una burbuja de chat un <h1> se ve desproporcionado.
+				const heading = lines[0].match(/^(#{1,6})\s+(.*)$/);
+				if (lines.length === 1 && heading) {
+					return `<p class="kilo-ask-heading">${inline(heading[2])}</p>`;
+				}
+
+				// Lista con guiones o numerada.
+				if (lines.every((l) => /^[-*]\s+/.test(l))) {
+					return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^[-*]\s+/, ''))}</li>`).join('')}</ul>`;
+				}
+				if (lines.every((l) => /^\d+\.\s+/.test(l))) {
+					return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
+				}
+
+				// Párrafo normal.
+				return `<p>${lines.map(inline).join('<br>')}</p>`;
+			})
+			.join('');
+	}
+
 	const SUGGESTIONS = [
 		'¿Cómo se calcula el precio mensual?',
 		'¿Qué pasa si el dueño pierde el chip?',
@@ -70,11 +129,14 @@
 		function openPanel() {
 			scrim.hidden = false;
 			panel.hidden = false;
+			// El que scrollea es <html>, no <body> — hay que bloquear el primero.
+			document.documentElement.style.overflow = 'hidden';
 			requestAnimationFrame(() => panel.classList.add('kilo-ask-panel--open'));
 			input.focus();
 		}
 		function closePanel() {
 			panel.classList.remove('kilo-ask-panel--open');
+			document.documentElement.style.overflow = '';
 			setTimeout(() => {
 				panel.hidden = true;
 				scrim.hidden = true;
@@ -107,7 +169,11 @@
 		function addBubble(role, text) {
 			const bubble = document.createElement('div');
 			bubble.className = `kilo-ask-bubble kilo-ask-bubble--${role}`;
-			bubble.textContent = text;
+			if (role === 'assistant') {
+				bubble.innerHTML = renderMarkdown(text);
+			} else {
+				bubble.textContent = text; // la pregunta del usuario nunca necesita render
+			}
 			messagesEl.append(bubble);
 			messagesEl.scrollTop = messagesEl.scrollHeight;
 			return bubble;
@@ -133,7 +199,7 @@
 				});
 				const data = await res.json();
 				if (res.ok) {
-					pending.textContent = data.answer;
+					pending.innerHTML = renderMarkdown(data.answer);
 				} else {
 					pending.classList.add('kilo-ask-bubble--error');
 					pending.textContent = 'No se pudo responder. Intenta de nuevo en un momento.';
