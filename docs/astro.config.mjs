@@ -2,13 +2,14 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightThemeNova from 'starlight-theme-nova';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import starlightPageContextAction from 'starlight-page-context-action';
 
 export default defineConfig({
 	site: 'https://kilo-docs-mu.vercel.app',
 	integrations: [
 		starlight({
 			title: 'Kilo Docs',
-			plugins: [starlightThemeNova(), starlightLlmsTxt()],
+			plugins: [starlightThemeNova(), starlightLlmsTxt(), starlightPageContextAction()],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/JosepRivera/kilo-server' }],
 			sidebar: [
 				{
