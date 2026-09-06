@@ -6,6 +6,10 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Kilo Docs',
+			logo: {
+				src: './src/assets/kilo-mascota.svg',
+				alt: 'Kilo',
+			},
 			plugins: [starlightThemeNova()],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/JosepRivera/kilo-server' }],
 			sidebar: [
