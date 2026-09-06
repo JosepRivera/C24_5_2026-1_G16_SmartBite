@@ -9,7 +9,14 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Kilo Docs',
-			plugins: [starlightThemeNova(), starlightLlmsTxt(), starlightPageContextAction()],
+			plugins: [
+				starlightThemeNova(),
+				starlightLlmsTxt(),
+				starlightPageContextAction({
+					prompt:
+						'Lee {url} completo. Responde mis preguntas usando exclusivamente lo que está escrito en esa página — no agregues supuestos, prácticas genéricas de la industria, ni información que no esté ahí. Si algo no está definido en la página, dime explícitamente que no está definido, en vez de inventarlo o completarlo con conocimiento externo. Quiero hacerte preguntas sobre esto.',
+				}),
+			],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/JosepRivera/kilo-server' }],
 			sidebar: [
 				{
