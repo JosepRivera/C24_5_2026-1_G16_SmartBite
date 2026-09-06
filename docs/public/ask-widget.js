@@ -24,7 +24,10 @@
 			.replace(/&lt;br\s*\/?&gt;/gi, '<br>'); // <br> dentro de una celda de tabla: la única etiqueta HTML que se deja pasar, sin atributos, no es un riesgo
 	}
 
-	function renderMarkdown(markdown) {
+	// Devuelve un arreglo de bloques HTML (uno por párrafo/lista/tabla/encabezado
+	// del markdown), no un solo string unido — así cada bloque puede ir en su
+	// propia burbuja de chat, como mensajes seguidos de WhatsApp.
+	function renderMarkdownBlocks(markdown) {
 		const blocks = markdown.trim().split(/\n{2,}/);
 		return blocks
 			.map((block) => {
@@ -64,7 +67,7 @@
 				// Párrafo normal.
 				return `<p>${lines.map(inline).join('<br>')}</p>`;
 			})
-			.join('');
+			.filter((html) => html !== '');
 	}
 
 	const SUGGESTIONS = [
@@ -169,14 +172,25 @@
 		function addBubble(role, text) {
 			const bubble = document.createElement('div');
 			bubble.className = `kilo-ask-bubble kilo-ask-bubble--${role}`;
-			if (role === 'assistant') {
-				bubble.innerHTML = renderMarkdown(text);
-			} else {
-				bubble.textContent = text; // la pregunta del usuario nunca necesita render
-			}
+			bubble.textContent = text; // uso genérico: pregunta del usuario, "Pensando...", errores — todo texto plano
 			messagesEl.append(bubble);
 			messagesEl.scrollTop = messagesEl.scrollHeight;
 			return bubble;
+		}
+
+		// Una respuesta larga se parte en varias burbujas seguidas (una por
+		// párrafo/lista/tabla), como mensajes de WhatsApp, en vez de un solo
+		// bloque de texto denso.
+		async function addAssistantBlocks(markdown) {
+			const blocks = renderMarkdownBlocks(markdown);
+			for (const html of blocks) {
+				const bubble = document.createElement('div');
+				bubble.className = 'kilo-ask-bubble kilo-ask-bubble--assistant';
+				bubble.innerHTML = html;
+				messagesEl.append(bubble);
+				messagesEl.scrollTop = messagesEl.scrollHeight;
+				if (blocks.length > 1) await new Promise((r) => setTimeout(r, 220));
+			}
 		}
 
 		form.addEventListener('submit', async (e) => {
@@ -199,7 +213,8 @@
 				});
 				const data = await res.json();
 				if (res.ok && data.answer && data.answer.trim()) {
-					pending.innerHTML = renderMarkdown(data.answer);
+					pending.remove();
+					await addAssistantBlocks(data.answer);
 				} else if (res.ok) {
 					// Respaldo del lado del cliente: si por lo que sea llega vacío
 					// (no debería, el servidor ya reintenta esto), nunca mostrar
