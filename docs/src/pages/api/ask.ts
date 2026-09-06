@@ -19,6 +19,28 @@ const MAX_QUESTION_CHARS = 500;
 // ~28,000 tokens (~110,000 caracteres). Dejamos margen amplio.
 const MAX_CORPUS_CHARS = 150000;
 
+// Historial de la conversación (para que "¿y eso cómo se resuelve?" tenga
+// antecedente) — lo manda el cliente, no se guarda en el servidor. Acotado
+// para no sumarle de más al corpus ya grande en cada llamada.
+const MAX_HISTORY_MESSAGES = 8; // 4 turnos user+assistant
+const MAX_HISTORY_MESSAGE_CHARS = 2000;
+
+type HistoryMessage = { role: 'user' | 'assistant'; content: string };
+
+function sanitizeHistory(raw: unknown): HistoryMessage[] {
+	if (!Array.isArray(raw)) return [];
+	const cleaned: HistoryMessage[] = [];
+	for (const item of raw) {
+		if (!item || typeof item !== 'object') continue;
+		const role = (item as { role?: unknown }).role;
+		const content = (item as { content?: unknown }).content;
+		if ((role !== 'user' && role !== 'assistant') || typeof content !== 'string') continue;
+		const trimmed = content.trim().slice(0, MAX_HISTORY_MESSAGE_CHARS);
+		if (trimmed) cleaned.push({ role, content: trimmed });
+	}
+	return cleaned.slice(-MAX_HISTORY_MESSAGES);
+}
+
 let cachedCorpus: string | null = null;
 
 async function buildCorpus(): Promise<string> {
@@ -45,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
 		return json({ error: 'Falta GROQ_API_KEY en el servidor.' }, 500);
 	}
 
-	let body: { question?: string };
+	let body: { question?: string; history?: unknown };
 	try {
 		body = await request.json();
 	} catch {
@@ -56,6 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
 	if (!question) {
 		return json({ error: 'Falta la pregunta.' }, 400);
 	}
+	const history = sanitizeHistory(body.history);
 
 	const corpus = await buildCorpus();
 
@@ -76,6 +99,7 @@ Reglas de estilo (importan tanto como el contenido):
 - Puedes usar markdown simple cuando de verdad ayude a leer mejor: **negrita** para resaltar un número o término clave, tabla con "|" cuando compares varias opciones (planes, tarifas, alternativas) lado a lado, lista numerada o con guiones cuando sea genuinamente una secuencia de pasos. El sistema sí renderiza este formato.
 - No abuses del formato: si la respuesta es una sola idea o una explicación corrida, escríbela en prosa normal, sin forzar una lista o tabla donde no aporta.
 - Esto se muestra como una serie de mensajes de chat, como WhatsApp. Si tu respuesta tiene más de una idea separada, parte cada idea en su propio mensaje escribiendo una línea que diga exactamente "---MSG---" entre una idea y la siguiente. Regla estricta: nunca pongas "---MSG---" en medio de algo que pertenece junto — una frase que presenta una fórmula o tabla siempre va en el MISMO mensaje que la fórmula o tabla que presenta, nunca separada de ella. Si toda tu respuesta es una sola idea, no uses "---MSG---" en absoluto — mándala como un solo mensaje.
+- Es una conversación, no preguntas sueltas: si el usuario pregunta algo que solo tiene sentido junto con lo que preguntó antes ("y eso cómo se resuelve", "por qué", "y si no tiene RUC"), respondé siguiendo el hilo del mensaje anterior — no lo trates como una pregunta nueva sin relación. Igual seguís respondiendo solo con la documentación de abajo.
 
 Documentación completa de Kilo:
 """
@@ -93,10 +117,7 @@ ${corpus}
 				model: MODEL,
 				temperature: 0.2,
 				max_tokens: 1000,
-				messages: [
-					{ role: 'system', content: systemPrompt },
-					{ role: 'user', content: question },
-				],
+				messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: question }],
 			}),
 		});
 		if (!res.ok) {

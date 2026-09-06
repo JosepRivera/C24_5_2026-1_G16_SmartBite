@@ -214,6 +214,12 @@
 			}
 		}
 
+		// Historial de la conversación (para que "¿y eso cómo se resuelve?" tenga
+		// antecedente) — solo vive en memoria de esta sesión del panel, se manda
+		// junto con cada pregunta nueva. Se pierde al recargar la página, y eso
+		// está bien: no hace falta persistirlo.
+		const history = [];
+
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			if (submitBtn.disabled) return; // ya hay una pregunta en curso
@@ -231,12 +237,13 @@
 				const res = await fetch('/api/ask', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ question }),
+					body: JSON.stringify({ question, history }),
 				});
 				const data = await res.json();
 				if (res.ok && data.answer && data.answer.trim()) {
 					pending.remove();
 					await addAssistantBlocks(data.answer);
+					history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
 				} else if (res.ok) {
 					// Respaldo del lado del cliente: si por lo que sea llega vacío
 					// (no debería, el servidor ya reintenta esto), nunca mostrar
