@@ -8,7 +8,7 @@
 	justify-content: center;
 	width: 3rem;
 	height: 3rem;
-	border-radius: 999px;
+	border-radius: 0.85rem;
 	border: 1px solid var(--sl-color-gray-5);
 	background-color: var(--sl-color-accent);
 	color: var(--sl-color-white);
@@ -16,27 +16,31 @@
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-#kilo-ask-overlay {
+#kilo-ask-scrim {
 	position: fixed;
 	inset: 0;
 	z-index: 200;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 1.5rem;
-	background-color: rgba(0, 0, 0, 0.6);
+	background-color: rgba(0, 0, 0, 0.5);
 }
 
-#kilo-ask-modal {
-	width: min(480px, 100%);
-	max-height: min(560px, 100%);
+#kilo-ask-panel {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 201;
+	width: min(400px, 100vw);
 	display: flex;
 	flex-direction: column;
-	border-radius: 0.75rem;
-	border: 1px solid var(--sl-color-gray-5);
 	background-color: var(--sl-color-black);
-	box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-	overflow: hidden;
+	border-left: 1px solid var(--sl-color-gray-5);
+	box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
+	transform: translateX(100%);
+	transition: transform 0.2s ease;
+}
+
+#kilo-ask-panel.kilo-ask-panel--open {
+	transform: translateX(0);
 }
 
 #kilo-ask-header {
@@ -47,6 +51,7 @@
 	border-bottom: 1px solid var(--sl-color-gray-5);
 	color: var(--sl-color-white);
 	font-weight: 600;
+	flex-shrink: 0;
 }
 
 #kilo-ask-header span {
@@ -59,6 +64,7 @@
 	width: 1.1em;
 	height: 1.1em;
 	flex-shrink: 0;
+	color: var(--sl-color-accent-high);
 }
 
 #kilo-ask-close {
@@ -70,28 +76,85 @@
 	cursor: pointer;
 }
 
-#kilo-ask-answer {
-	padding: 1rem 1.25rem;
-	color: var(--sl-color-gray-2);
-	font-size: var(--sl-text-sm);
-	line-height: 1.6;
-	overflow-y: auto;
-	white-space: pre-wrap;
+#kilo-ask-messages {
 	flex: 1;
+	overflow-y: auto;
+	padding: 1.1rem 1.25rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+#kilo-ask-intro {
+	margin: 0 0 0.25rem;
+	color: var(--sl-color-gray-3);
+	font-size: var(--sl-text-sm);
+	line-height: 1.5;
+}
+
+#kilo-ask-suggestions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.kilo-ask-chip {
+	text-align: left;
+	padding: 0.6rem 0.85rem;
+	border-radius: 0.6rem;
+	border: 1px solid var(--sl-color-gray-5);
+	background-color: var(--sl-color-gray-6);
+	color: var(--sl-color-gray-1);
+	font-size: var(--sl-text-sm);
+	cursor: pointer;
+}
+
+.kilo-ask-chip:hover {
+	border-color: var(--sl-color-accent);
+}
+
+.kilo-ask-bubble {
+	max-width: 90%;
+	padding: 0.65rem 0.9rem;
+	border-radius: 0.65rem;
+	font-size: var(--sl-text-sm);
+	line-height: 1.55;
+	white-space: pre-wrap;
+}
+
+.kilo-ask-bubble--user {
+	align-self: flex-end;
+	background-color: var(--sl-color-accent);
+	color: var(--sl-color-white);
+	border-bottom-right-radius: 0.15rem;
+}
+
+.kilo-ask-bubble--assistant {
+	align-self: flex-start;
+	background-color: var(--sl-color-gray-6);
+	color: var(--sl-color-gray-1);
+	border-bottom-left-radius: 0.15rem;
+}
+
+.kilo-ask-bubble--error {
+	background-color: var(--sl-color-red-low, #3a1414);
+	color: var(--sl-color-red-high, #ffb4b4);
+	border: 1px solid var(--sl-color-red, #a53b3b);
 }
 
 #kilo-ask-form {
 	display: flex;
-	gap: 0.6rem;
-	padding: 1rem 1.25rem;
+	gap: 0.5rem;
+	padding: 0.85rem 1rem;
 	border-top: 1px solid var(--sl-color-gray-5);
+	flex-shrink: 0;
 }
 
 #kilo-ask-input {
 	flex: 1;
 	min-width: 0;
-	padding: 0.6rem 0.75rem;
-	border-radius: 0.4rem;
+	padding: 0.55rem 0.8rem;
+	border-radius: 999px;
 	border: 1px solid var(--sl-color-gray-5);
 	background-color: var(--sl-color-gray-6);
 	color: var(--sl-color-white);
@@ -99,13 +162,16 @@
 }
 
 #kilo-ask-submit {
-	padding: 0.6rem 1rem;
-	border-radius: 0.4rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.4rem;
+	height: 2.4rem;
+	flex-shrink: 0;
+	border-radius: 999px;
 	border: none;
 	background-color: var(--sl-color-accent);
 	color: var(--sl-color-white);
-	font-size: var(--sl-text-sm);
-	font-weight: 600;
 	cursor: pointer;
 }
 
