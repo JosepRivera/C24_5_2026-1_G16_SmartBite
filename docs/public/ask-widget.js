@@ -218,6 +218,11 @@
 		// antecedente) — solo vive en memoria de esta sesión del panel, se manda
 		// junto con cada pregunta nueva. Se pierde al recargar la página, y eso
 		// está bien: no hace falta persistirlo.
+		// El servidor igual recorta a las últimas 4 idas y vueltas antes de
+		// mandarlo al modelo, pero sin este tope el array crecería sin límite en
+		// una sesión larga y cada pregunta mandaría un body cada vez más pesado
+		// por nada — se recorta acá también.
+		const MAX_HISTORY_MESSAGES = 8; // 4 turnos user+assistant, igual que el servidor
 		const history = [];
 
 		form.addEventListener('submit', async (e) => {
@@ -244,6 +249,7 @@
 					pending.remove();
 					await addAssistantBlocks(data.answer);
 					history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
+					history.splice(0, history.length - MAX_HISTORY_MESSAGES);
 				} else if (res.ok) {
 					// Respaldo del lado del cliente: si por lo que sea llega vacío
 					// (no debería, el servidor ya reintenta esto), nunca mostrar
