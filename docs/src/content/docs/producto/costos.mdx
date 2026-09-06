@@ -148,13 +148,15 @@ Nada de lo siguiente aparece en las tablas de arriba, y sumado **pesa más que t
 
 ## Riesgos de costo
 
-Los tres que realmente importan, en orden de impacto:
+Los dos que realmente importan, en orden de impacto:
 
 1. **La interpretación del IGV en el precio publicado.** Vale 15.25% de los ingresos — más que todo el hosting y toda la IA juntos, a cualquier escala. Ninguna optimización de infraestructura lo recupera. Es una decisión de una sola línea en la página de precios.
 
 2. **La comisión de pago en cobros chicos.** A S/35, la tarjeta cobra **5.36% efectivo** — y ese porcentaje es el costo completo, porque la comisión no lleva IGV encima. Mitigaciones: usar **Yape por defecto** (3.44% plano, sin fee fijo) y ofrecer **cobro trimestral o anual** para amortizar el fee fijo en una sola transacción en vez de tres o doce.
 
-3. **El tamaño del prompt del catálogo.** <Badge text="Por validar en piloto" variant="caution" /> Se armó un catálogo de ejemplo realista — **80 insumos**, típico de un menú de 15-25 platos criollos con superposición de ingredientes entre platos — para acotar mejor el riesgo sin esperar al piloto. El resultado depende mucho más del **formato** que del tamaño del restaurante:
+Un tercer punto que se investigó y **dejó de ser un riesgo real**, para que no se confunda con los dos de arriba:
+
+**El tamaño del prompt del catálogo.** <Badge text="Insignificante, no bloquea nada" variant="note" /> Se armó un catálogo de ejemplo realista — **80 insumos**, típico de un menú de 15-25 platos criollos con superposición de ingredientes entre platos — para acotar el riesgo sin esperar al piloto. El resultado depende mucho más del **formato** que del tamaño del restaurante:
 
    | Formato del catálogo en el prompt | Tokens estimados (80 insumos) |
    |---|---|
@@ -164,15 +166,16 @@ Los tres que realmente importan, en orden de impacto:
 
    El formato compacto de una línea sale **más barato que el supuesto original de 1,500 tokens**, incluso escalado a 200 insumos (~1,900-2,200 tokens, no los 8,000 estimados antes). El JSON indentado, en cambio, casi triplica el costo del mismo catálogo. **Decisión: el catálogo se serializa en el prompt como una línea compacta por insumo, nunca como JSON pretty-printed** — es un control de costo que no depende de tener un piloto corriendo, solo de cómo se arma el prompt.
 
-   Esta estimación usa una aproximación de caracteres por token, no el tokenizador real de Anthropic, y el catálogo es de ejemplo, no de un restaurante real. El repositorio incluye `scripts/count-catalog-tokens.ts`, listo para correr contra el endpoint gratuito `messages.count_tokens` en cuanto haya una `ANTHROPIC_API_KEY` a mano — falta solo correrlo sobre **tres catálogos de verdad** antes de fijar precio, no ya definir cómo medirlo.
+   Esta estimación usa una aproximación de caracteres por token, no el tokenizador real de Anthropic, y el catálogo es de ejemplo, no de un restaurante real. El repositorio incluye `scripts/count-catalog-tokens.ts`, listo para correr contra el endpoint gratuito `messages.count_tokens` en cuanto haya una `ANTHROPIC_API_KEY` a mano.
+
+   **Por qué esto ya no bloquea nada:** incluso en el peor caso realista con el formato ya decidido — un restaurante grande de 200 insumos, 700 tokens por encima del supuesto de 1,500 que ya está en esta página — el costo extra es de **US$0.042 (S/0.14) al mes por restaurante**. Frente a la comisión de pago sola (S/1.72-3.73 por cada cobro), es ruido. Correr el script sobre catálogos reales sigue siendo correcto para tener el número exacto, pero ninguna cifra que salga de ahí puede mover el precio ni el punto de equilibrio.
 
 ## Nota de método
 
-Quedan **dos confirmaciones externas pendientes** antes de lanzar:
+Queda **una sola confirmación externa pendiente** antes de lanzar, y es la que de verdad bloquea algo:
 
 | Pendiente | Por qué importa |
 |---|---|
 | Tratamiento del IGV y del régimen, confirmado por un contador | Vale **15.25% del ingreso**; acá está razonado desde el alcance de los regímenes, no desde una resolución sobre SaaS doméstico |
-| Conteos reales de tokens del catálogo, medidos con `messages.count_tokens` sobre tres catálogos de verdad | Ver riesgo 3 arriba: un catálogo de ejemplo ya acotó el rango a ~700-2,200 tokens según formato; falta el número exacto con el tokenizador real |
 
-Dos cifras más se apoyan en fuentes secundarias, pero no bloquean nada: el precio de **Render Postgres Basic-1gb** (~$19-20) y el costo de **constituir una SAC** (notaría más SUNARP, comúnmente entre **S/400 y S/1,000**).
+Tres cosas más quedan anotadas pero **no bloquean nada** — se cierran cuando sea conveniente, no antes de lanzar: los conteos reales de tokens del catálogo con `messages.count_tokens` (ver arriba: ya se acotó a un impacto de ~S/0.14/mes en el peor caso), el precio de **Render Postgres Basic-1gb** (~$19-20, fuente secundaria) y el costo de **constituir una SAC** (notaría más SUNARP, comúnmente entre **S/400 y S/1,000**).
